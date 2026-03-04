@@ -12,7 +12,8 @@ export const scaTools: ToolDefinition[] = [
     description: TOOL_DESCRIPTIONS.spreedly_sca_authenticate,
     schema: ScaAuthenticateSchema.shape,
     handler: async (params, { transport }) => {
-      const { sca_provider_key, ...body } = params as Record<string, unknown> & { sca_provider_key: string };
+      const { sca_provider_key, ...txnParams } = params as Record<string, unknown> & { sca_provider_key: string };
+      const body = { transaction: txnParams };
       const res = await transport.request("POST", `/sca/providers/${sca_provider_key}/authenticate.json`, { body });
       return res.data;
     },
