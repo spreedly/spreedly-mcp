@@ -203,12 +203,16 @@ npm run typecheck # Type-check
 npm run build     # Build for distribution
 ```
 
+To run the MCP server locally against a real Spreedly test environment (e.g. during development before the package is published), see [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions and security guidelines.
+
 ## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide, including local MCP client configuration and credential handling.
 
 1. Fork the repository
 2. Create a feature branch
 3. Write tests for your changes
-4. Ensure all tests pass: `npm test`
+4. Ensure all checks pass: `npm test && npm run typecheck && npm run lint`
 5. Submit a pull request
 
 ## License

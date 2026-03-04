@@ -9,3 +9,7 @@ coverage/
 
 *.tsbuildinfo
 .DS_Store
+
+# MCP client config directories (may contain credentials)
+.cursor/
+.vscode/
