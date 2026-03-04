@@ -1,0 +1,42 @@
+# Spreedly MCP Server
+
+> MCP server providing AI access to the Spreedly payments API
+
+## Overview
+
+This MCP server wraps the Spreedly Core API (https://core.spreedly.com/v1) with 80+ tools organized across 13 domains. Authentication uses HTTP Basic Auth via environment variables.
+
+## Authentication
+
+Required env vars: SPREEDLY_ENVIRONMENT_KEY, SPREEDLY_ACCESS_SECRET
+
+## Domains
+
+- gateways: CRUD, authorize, purchase, verify, store, credit (13 tools)
+- transactions: list, show, capture, void, credit, workflows (12 tools)
+- paymentMethods: CRUD, retain, redact, recache, events (13 tools)
+- receivers: CRUD, deliver, export (8 tools)
+- certificates: CRUD, generate (4 tools)
+- environments: CRUD, access secrets (9 tools)
+- merchantProfiles: CRUD (4 tools)
+- subMerchants: CRUD (4 tools)
+- events: list, show (2 tools)
+- protection: claims, events, providers (5 tools)
+- sca: authenticate, providers (3 tools)
+- cardRefresher: inquiry, list (3 tools)
+- networkTokenization: metadata, status (2 tools)
+
+## Tool Naming
+
+Pattern: spreedly_<domain>_<action>
+Examples: spreedly_gateway_authorize, spreedly_transaction_capture
+
+## Amounts
+
+All monetary amounts are in cents (integer). Currency codes are ISO 4217.
+
+## Links
+
+- Docs: https://docs.spreedly.com
+- API Reference: https://docs.spreedly.com/reference/api/v1/
+- Source: https://github.com/spreedly/spreedly-mcp
