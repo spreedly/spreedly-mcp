@@ -115,7 +115,7 @@ function buildAuditEntry(
     component: "spreedly-mcp",
     tool: toolName,
     envKeyPrefix,
-    status: error ? "error" : "success",
+    status: error !== undefined ? "error" : "success",
     durationMs: Date.now() - startTime,
   };
 

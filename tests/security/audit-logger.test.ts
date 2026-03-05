@@ -160,6 +160,14 @@ describe("emitAuditEvent", () => {
     expect(parsed.errorCode).toBe("UNKNOWN_ERROR");
   });
 
+  it.each([null, 0, "", false])("classifies falsy throw value (%j) as error", (value) => {
+    emitAuditEvent("spreedly_gateway_list", "Abc123", Date.now(), value);
+
+    const parsed = JSON.parse((stderrSpy.mock.calls[0][0] as string).trim());
+    expect(parsed.status).toBe("error");
+    expect(parsed.errorCode).toBe("UNKNOWN_ERROR");
+  });
+
   it("never includes request or response bodies in output", () => {
     emitAuditEvent("spreedly_payment_method_create", "Abc123", Date.now());
 
