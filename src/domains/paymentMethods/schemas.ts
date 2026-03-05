@@ -19,7 +19,7 @@ export const CreatePaymentMethodSchema = z.object({
       last_name: z.string().describe("Account holder last name"),
     }).optional().describe("Bank account details"),
     email: z.string().optional().describe("Customer email"),
-    data: z.record(z.unknown()).optional().describe("Additional metadata"),
+    data: z.record(z.string(), z.unknown()).optional().describe("Additional metadata"),
     retained: z.boolean().optional().describe("Whether to retain immediately"),
   }).describe("Payment method details"),
 }).strict();
@@ -39,7 +39,7 @@ export const UpdatePaymentMethodSchema = z.object({
     first_name: z.string().optional(),
     last_name: z.string().optional(),
     email: z.string().optional(),
-    data: z.record(z.unknown()).optional(),
+    data: z.record(z.string(), z.unknown()).optional(),
     month: z.number().int().min(1).max(12).optional(),
     year: z.number().int().optional(),
   }).describe("Fields to update"),

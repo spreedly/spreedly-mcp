@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const CreateGatewaySchema = z.object({
   gateway_type: z.string().describe("The type of gateway to create (e.g., 'test', 'stripe', 'braintree')"),
-  credentials: z.record(z.unknown()).optional().describe("Gateway-specific credential fields"),
+  credentials: z.record(z.string(), z.unknown()).optional().describe("Gateway-specific credential fields"),
 }).strict();
 
 export const ListGatewaysSchema = z.object({
@@ -16,7 +16,7 @@ export const ShowGatewaySchema = z.object({
 
 export const UpdateGatewaySchema = z.object({
   gateway_token: z.string().describe("The token of the gateway to update"),
-  credentials: z.record(z.unknown()).optional().describe("Updated gateway credentials"),
+  credentials: z.record(z.string(), z.unknown()).optional().describe("Updated gateway credentials"),
 }).strict();
 
 export const RedactGatewaySchema = z.object({
