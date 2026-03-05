@@ -184,12 +184,45 @@ For details, see [Spreedly Credentials Documentation](https://docs.spreedly.com/
 1. Find the transaction: `spreedly_transaction_show`
 2. Issue a refund: `spreedly_transaction_credit`
 
+## Audit Logging
+
+The MCP server emits structured audit log entries to **stderr** for every tool invocation. Logs use one-line JSON format for easy SIEM ingestion and comply with PCI DSS v4.0.1 Requirement 10.2.2. stderr is the [MCP-specified channel for logging](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#stdio) — stdout is reserved for protocol traffic and must not contain non-MCP messages.
+
+### Example Output
+
+```
+{"timestamp":"2026-03-05T18:30:00.000Z","idempotencyKey":"f47ac10b-58cc-4372-a567-0e02b2c3d479","component":"spreedly-mcp","tool":"spreedly_gateway_list","envKeyPrefix":"Abc123","status":"success","durationMs":142}
+{"timestamp":"2026-03-05T18:30:01.000Z","idempotencyKey":"7c9e6679-7425-40de-944b-e07fc1f90ae7","component":"spreedly-mcp","tool":"spreedly_payment_method_create","envKeyPrefix":"Abc123","status":"error","durationMs":89,"errorCode":"VALIDATION_ERROR","statusCode":422}
+```
+
+Each entry includes: timestamp, idempotency key, component identifier, tool name, environment key prefix (first 6 characters only), success/failure status, duration, and error details when applicable. Request and response bodies are **never** logged.
+
+### De-duplicating Logs
+
+The server emits exactly **one** audit entry per tool invocation. However, MCP hosts (Claude Desktop, Cursor, VS Code, etc.) capture and display stderr independently from one another, and some hosts may render the same stderr line more than once in their log UI. Each entry includes a unique `idempotencyKey` (UUIDv4) so that downstream log pipelines can safely de-duplicate: discard any entry whose `idempotencyKey` you have already seen.
+
+### Configuration
+
+| Environment Variable | Values | Default | Description |
+|---|---|---|---|
+| `SPREEDLY_MCP_LOG_LEVEL` | `info`, `silent` | `info` | Set to `silent` to disable audit logging |
+
+### Shared Responsibility
+
+| Responsibility | Owner |
+|---|---|
+| Emit structured audit events to stderr | Spreedly MCP server |
+| Capture stderr and route to SIEM/log aggregator | Customer infrastructure |
+| Retain logs for 12+ months (3 months immediately available) | Customer infrastructure |
+| Monitor and alert on suspicious audit events | Customer infrastructure |
+
 ## Security
 
 - Credentials are isolated in a closure -- never stored as object properties, never serializable
 - All inputs are sanitized for invisible Unicode characters and injection attempts
 - Error messages are redacted to prevent credential leakage
 - Tool descriptions are static constants hardened against prompt injection
+- Audit logs never contain request/response bodies, full keys, or secrets
 - See [SECURITY.md](SECURITY.md) for the full security policy
 
 ## Development

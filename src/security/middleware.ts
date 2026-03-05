@@ -1,9 +1,11 @@
 import type { SpreedlyTransport } from "../transport/types.js";
 import { SpreedlyError } from "../transport/errors.js";
 import { sanitizeParams, redactCredentials } from "./sanitizer.js";
+import { emitAuditEvent } from "./audit-logger.js";
 
 export interface ToolContext {
   transport: SpreedlyTransport;
+  envKeyPrefix: string;
 }
 
 export type ToolHandler<TParams, TResult> = (
@@ -18,18 +20,22 @@ export interface McpToolResult {
 }
 
 export function wrapHandler<TParams extends Record<string, unknown>>(
+  toolName: string,
   handler: ToolHandler<TParams, unknown>,
   validate: (raw: unknown) => TParams,
 ): (raw: unknown, ctx: ToolContext) => Promise<McpToolResult> {
   return async (raw: unknown, ctx: ToolContext): Promise<McpToolResult> => {
+    const startTime = Date.now();
     try {
       const rawParams = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
       const sanitized = sanitizeParams(rawParams);
       const validated = validate(sanitized);
       const result = await handler(validated, ctx);
       const text = typeof result === "string" ? result : JSON.stringify(result, null, 2);
+      emitAuditEvent(toolName, ctx.envKeyPrefix, startTime);
       return { content: [{ type: "text", text }] };
     } catch (error) {
+      emitAuditEvent(toolName, ctx.envKeyPrefix, startTime, error);
       return formatError(error);
     }
   };

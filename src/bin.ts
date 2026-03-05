@@ -1,6 +1,7 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createTransport } from "./transport/SpreedlyHttpTransport.js";
 import { createServer } from "./server.js";
+import { validateAndExtractPrefix } from "./security/audit-logger.js";
 
 async function main() {
   const environmentKey = process.env.SPREEDLY_ENVIRONMENT_KEY;
@@ -26,8 +27,18 @@ async function main() {
     process.exit(1);
   }
 
+  let envKeyPrefix: string;
+  try {
+    envKeyPrefix = validateAndExtractPrefix(environmentKey);
+  } catch (error) {
+    console.error(
+      `\nSpreedly MCP: ${error instanceof Error ? error.message : "Invalid environment key."}\n`,
+    );
+    process.exit(1);
+  }
+
   const transport = createTransport(environmentKey, accessSecret);
-  const server = createServer(transport);
+  const server = createServer(transport, { envKeyPrefix });
 
   const stdioTransport = new StdioServerTransport();
   await server.connect(stdioTransport);

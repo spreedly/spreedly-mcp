@@ -7,15 +7,21 @@ import { z } from "zod";
 const SERVER_NAME = "spreedly-mcp";
 const SERVER_VERSION = "0.1.0";
 
-export function createServer(transport: SpreedlyTransport): McpServer {
+export function createServer(
+  transport: SpreedlyTransport,
+  options?: { envKeyPrefix?: string },
+): McpServer {
   const server = new McpServer({
     name: SERVER_NAME,
     version: SERVER_VERSION,
   });
 
+  const envKeyPrefix = options?.envKeyPrefix ?? "unknown";
+
   for (const tool of allTools) {
     const zodShape = buildZodShape(tool.schema);
     const wrapped = wrapHandler(
+      tool.name,
       tool.handler,
       (raw) => {
         if (Object.keys(zodShape).length === 0) return raw as Record<string, unknown>;
@@ -29,7 +35,7 @@ export function createServer(transport: SpreedlyTransport): McpServer {
       tool.description,
       tool.schema,
       async (params: Record<string, unknown>) => {
-        return wrapped(params, { transport });
+        return wrapped(params, { transport, envKeyPrefix });
       },
     );
   }
