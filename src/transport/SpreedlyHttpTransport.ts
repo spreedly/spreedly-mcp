@@ -14,6 +14,9 @@ export function createTransport(
   config: TransportConfig = {},
 ): SpreedlyTransport {
   const baseUrl = config.baseUrl ?? DEFAULT_BASE_URL;
+  if (!baseUrl.startsWith("https://")) {
+    throw new Error("Transport baseUrl must use HTTPS.");
+  }
   const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const authHeader = `Basic ${Buffer.from(`${environmentKey}:${accessSecret}`).toString("base64")}`;
 
@@ -28,10 +31,10 @@ export function createTransport(
 
     try {
       const headers: Record<string, string> = {
+        ...options.headers,
         Authorization: authHeader,
         Accept: "application/json",
         "Content-Type": "application/json",
-        ...options.headers,
       };
 
       const fetchOptions: globalThis.RequestInit = {

@@ -5,14 +5,14 @@ export const CreatePaymentMethodSchema = z.object({
     credit_card: z.object({
       first_name: z.string().describe("Cardholder first name"),
       last_name: z.string().describe("Cardholder last name"),
-      number: z.string().describe("Card number"),
+      number: z.string().describe("Full card number (PAN) - sensitive cardholder data, required for tokenization only"),
       month: z.number().int().min(1).max(12).describe("Expiration month"),
       year: z.number().int().describe("Expiration year"),
-      verification_value: z.string().optional().describe("CVV/CVC"),
+      verification_value: z.string().optional().describe("Card security code (CVV/CVC) - sensitive, do not store or log"),
     }).optional().describe("Credit card details"),
     bank_account: z.object({
       bank_routing_number: z.string().describe("Bank routing number"),
-      bank_account_number: z.string().describe("Bank account number"),
+      bank_account_number: z.string().describe("Full bank account number - sensitive, required for tokenization only"),
       bank_account_holder_type: z.enum(["personal", "business"]).optional(),
       bank_account_type: z.enum(["checking", "savings"]).optional(),
       first_name: z.string().describe("Account holder first name"),
@@ -57,7 +57,7 @@ export const RecachePaymentMethodSchema = z.object({
   payment_method_token: z.string().describe("The token of the payment method"),
   payment_method: z.object({
     credit_card: z.object({
-      verification_value: z.string().describe("CVV/CVC to recache"),
+      verification_value: z.string().describe("Card security code (CVV/CVC) to recache - sensitive, do not store or log"),
     }),
   }),
 }).strict();
@@ -82,7 +82,7 @@ export const UpdateGratisSchema = z.object({
   payment_method: z.object({
     first_name: z.string().optional(),
     last_name: z.string().optional(),
-    number: z.string().optional(),
+    number: z.string().optional().describe("Updated card number (PAN) - sensitive cardholder data"),
     month: z.number().int().min(1).max(12).optional(),
     year: z.number().int().optional(),
   }).describe("Fields to update"),
