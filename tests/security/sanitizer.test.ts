@@ -86,6 +86,29 @@ describe("sanitizeParams", () => {
       'Invalid input detected in field "name".',
     );
   });
+
+  it("sanitizes string values inside arrays", () => {
+    const result = sanitizeParams({ tokens: ["  hello\u200B  ", "world\uFEFF"] });
+    expect(result.tokens).toEqual(["hello", "world"]);
+  });
+
+  it("sanitizes objects inside arrays", () => {
+    const result = sanitizeParams({
+      credentials: [{ name: "  key\u200B  ", value: "  secret\uFEFF  " }],
+    });
+    expect(result.credentials).toEqual([{ name: "key", value: "secret" }]);
+  });
+
+  it("throws on injection attempts inside arrays", () => {
+    expect(() =>
+      sanitizeParams({ items: ["normal", "tool_call bad stuff"] }),
+    ).toThrow('Invalid input detected in array field "items".');
+  });
+
+  it("passes through non-string non-object array values", () => {
+    const result = sanitizeParams({ counts: [1, 2, 3] });
+    expect(result.counts).toEqual([1, 2, 3]);
+  });
 });
 
 describe("redactCredentials", () => {
@@ -100,6 +123,16 @@ describe("redactCredentials", () => {
   it("redacts long base64 strings", () => {
     const longB64 = "A".repeat(50);
     expect(redactCredentials(`secret: ${longB64}`)).toContain("[REDACTED]");
+  });
+
+  it("redacts base64 strings as short as 20 chars", () => {
+    const shortB64 = "A".repeat(20);
+    expect(redactCredentials(`key: ${shortB64}`)).toContain("[REDACTED]");
+  });
+
+  it("does not redact base64 strings shorter than 20 chars", () => {
+    const tooShort = "A".repeat(19);
+    expect(redactCredentials(`key: ${tooShort}`)).toBe(`key: ${tooShort}`);
   });
 
   it("leaves short safe strings unchanged", () => {

@@ -198,4 +198,40 @@ describe("SpreedlyHttpTransport", () => {
     const transport = createTransport(FAKE_ENV_KEY, FAKE_ACCESS_SECRET);
     expect(Object.isFrozen(transport)).toBe(true);
   });
+
+  it("rejects non-HTTPS base URLs", () => {
+    expect(() =>
+      createTransport(FAKE_ENV_KEY, FAKE_ACCESS_SECRET, {
+        baseUrl: "http://core.spreedly.com/v1",
+      }),
+    ).toThrow("Transport baseUrl must use HTTPS.");
+  });
+
+  it("allows HTTPS base URLs", () => {
+    expect(() =>
+      createTransport(FAKE_ENV_KEY, FAKE_ACCESS_SECRET, {
+        baseUrl: "https://custom.api.test/v2",
+      }),
+    ).not.toThrow();
+  });
+
+  it("custom headers cannot override Authorization", async () => {
+    let capturedHeaders: Record<string, string> = {};
+
+    globalThis.fetch = vi.fn().mockImplementation(async (_url: string, init: RequestInit) => {
+      capturedHeaders = Object.fromEntries(Object.entries(init.headers as Record<string, string>));
+      return new Response(JSON.stringify({}), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+
+    const expectedAuth = `Basic ${Buffer.from(`${FAKE_ENV_KEY}:${FAKE_ACCESS_SECRET}`).toString("base64")}`;
+    const transport = createTransport(FAKE_ENV_KEY, FAKE_ACCESS_SECRET);
+    await transport.request("GET", "/test", {
+      headers: { Authorization: "Basic attacker-creds" },
+    });
+
+    expect(capturedHeaders["Authorization"]).toBe(expectedAuth);
+  });
 });
