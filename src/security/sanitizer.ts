@@ -53,7 +53,21 @@ export function sanitizeParams(params: Record<string, unknown>): Record<string, 
         throw new Error(`Invalid input detected in field "${key}".`);
       }
       result[key] = sanitized;
-    } else if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    } else if (Array.isArray(value)) {
+      result[key] = value.map((item) => {
+        if (typeof item === "string") {
+          const sanitized = sanitizeString(item, key);
+          if (containsInjectionAttempt(sanitized)) {
+            throw new Error(`Invalid input detected in array field "${key}".`);
+          }
+          return sanitized;
+        }
+        if (item !== null && typeof item === "object") {
+          return sanitizeParams(item as Record<string, unknown>);
+        }
+        return item;
+      });
+    } else if (value !== null && typeof value === "object") {
       result[key] = sanitizeParams(value as Record<string, unknown>);
     } else {
       result[key] = value;
@@ -67,5 +81,5 @@ export function redactCredentials(text: string): string {
   return text
     .replace(/Basic\s+[A-Za-z0-9+/=]+/g, "Basic [REDACTED]")
     .replace(/Bearer\s+[A-Za-z0-9._-]+/g, "Bearer [REDACTED]")
-    .replace(/[A-Za-z0-9+/]{40,}={0,2}/g, "[REDACTED]");
+    .replace(/[A-Za-z0-9+/]{20,}={0,2}/g, "[REDACTED]");
 }
