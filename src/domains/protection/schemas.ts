@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const ForwardClaimSchema = z.object({
   transaction_token: z.string().describe("The token of the transaction to submit the claim for"),
-  claim: z.record(z.unknown()).describe("Claim data to forward to the protection provider"),
+  claim: z.record(z.string(), z.unknown()).describe("Claim data to forward to the protection provider"),
 }).strict();
 
 export const ListProtectionEventsSchema = z.object({
@@ -14,7 +14,7 @@ export const ShowProtectionEventSchema = z.object({
 }).strict();
 
 export const CreateProtectionProviderSchema = z.object({
-  protection_provider: z.record(z.unknown()).describe("Protection provider configuration"),
+  protection_provider: z.record(z.string(), z.unknown()).describe("Protection provider configuration"),
 }).strict();
 
 export const ShowProtectionProviderSchema = z.object({

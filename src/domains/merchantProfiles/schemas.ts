@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const CreateMerchantProfileSchema = z.object({
-  merchant_profile: z.record(z.unknown()).describe("Merchant profile configuration"),
+  merchant_profile: z.record(z.string(), z.unknown()).describe("Merchant profile configuration"),
 }).strict();
 
 export const ListMerchantProfilesSchema = z.object({
@@ -14,5 +14,5 @@ export const ShowMerchantProfileSchema = z.object({
 
 export const UpdateMerchantProfileSchema = z.object({
   merchant_profile_token: z.string().describe("The token of the merchant profile to update"),
-  merchant_profile: z.record(z.unknown()).describe("Fields to update"),
+  merchant_profile: z.record(z.string(), z.unknown()).describe("Fields to update"),
 }).strict();

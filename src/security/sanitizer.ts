@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-misleading-character-class -- intentionally matching individual invisible/control characters
 const INVISIBLE_CHARS = /[\u200B\u200C\u200D\u200E\u200F\uFEFF\u2028\u2029\u202A-\u202E\u2060-\u2064\u2066-\u2069\u00AD]/g;
 
 const MCP_PROTOCOL_FRAGMENTS = [
