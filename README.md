@@ -186,11 +186,11 @@ For details, see [Spreedly Credentials Documentation](https://docs.spreedly.com/
 
 ## Audit Logging
 
-The MCP server emits structured audit log entries to **stderr** for every tool invocation. Logs use one-line JSON format for easy SIEM ingestion and comply with PCI DSS v4.0.1 Requirement 10.2.2. stderr is the [MCP-specified channel for logging](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#stdio) — stdout is reserved for protocol traffic and must not contain non-MCP messages.
+When audit logging is enabled (the default), the MCP server emits structured audit log entries to **stderr** for every tool invocation. Logs use one-line JSON format for easy SIEM ingestion and comply with PCI DSS v4.0.1 Requirement 10.2.2. stderr is the [MCP-specified channel for logging](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#stdio) — stdout is reserved for protocol traffic and must not contain non-MCP messages.
 
 ### Example Output
 
-```
+```json
 {"timestamp":"2026-03-05T18:30:00.000Z","idempotencyKey":"f47ac10b-58cc-4372-a567-0e02b2c3d479","component":"spreedly-mcp","tool":"spreedly_gateway_list","envKeyPrefix":"Abc123","status":"success","durationMs":142}
 {"timestamp":"2026-03-05T18:30:01.000Z","idempotencyKey":"7c9e6679-7425-40de-944b-e07fc1f90ae7","component":"spreedly-mcp","tool":"spreedly_payment_method_create","envKeyPrefix":"Abc123","status":"error","durationMs":89,"errorCode":"VALIDATION_ERROR","statusCode":422}
 ```
@@ -203,18 +203,18 @@ The server emits exactly **one** audit entry per tool invocation. However, MCP h
 
 ### Configuration
 
-| Environment Variable | Values | Default | Description |
-|---|---|---|---|
-| `SPREEDLY_MCP_LOG_LEVEL` | `info`, `silent` | `info` | Set to `silent` to disable audit logging |
+| Environment Variable          | Values           | Default | Description                                                                                                                                                                                                                                            |
+| ----------------------------- | ---------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `SPREEDLY_MCP_LOG_LEVEL`      | `info`, `silent` | `info`  | Set to `silent` to disable audit logging. **Note:** Disabling audit logs means this component will not satisfy PCI DSS Requirement 10.2.1 (audit logs enabled for all system components). Use `silent` only in development or non-PCI environments.    |
 
 ### Shared Responsibility
 
-| Responsibility | Owner |
-|---|---|
-| Emit structured audit events to stderr | Spreedly MCP server |
-| Capture stderr and route to SIEM/log aggregator | Customer infrastructure |
-| Retain logs for 12+ months (3 months immediately available) | Customer infrastructure |
-| Monitor and alert on suspicious audit events | Customer infrastructure |
+| Responsibility                                               | Owner                   |
+| ------------------------------------------------------------ | ----------------------- |
+| Emit structured audit events to stderr                       | Spreedly MCP server     |
+| Capture stderr and route to SIEM/log aggregator              | Customer infrastructure |
+| Retain logs for 12+ months (3 months immediately available)  | Customer infrastructure |
+| Monitor and alert on suspicious audit events                 | Customer infrastructure |
 
 ## Security
 
