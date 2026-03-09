@@ -7,6 +7,7 @@ import {
   type SpreedlyTransport,
   type TransportConfig,
 } from "./types.js";
+import { version } from "../../package.json";
 
 export function createTransport(
   environmentKey: string,
@@ -35,6 +36,7 @@ export function createTransport(
         Authorization: authHeader,
         Accept: "application/json",
         "Content-Type": "application/json",
+        "User-Agent": `Spreedly/MCP V${version}`,
       };
 
       const fetchOptions: globalThis.RequestInit = {
