@@ -48,9 +48,14 @@ export const transactionTools: ToolDefinition[] = [
     description: TOOL_DESCRIPTIONS.spreedly_transaction_update,
     schema: UpdateTransactionSchema.shape,
     handler: async (params, { transport }) => {
-      const { transaction_token, metadata } = params as { transaction_token: string; metadata?: Record<string, unknown> };
+      const { transaction_token, metadata } = params as {
+        transaction_token: string;
+        metadata?: Record<string, unknown>;
+      };
       const body = { transaction: { metadata } };
-      const res = await transport.request("PATCH", `/transactions/${transaction_token}.json`, { body });
+      const res = await transport.request("PATCH", `/transactions/${transaction_token}.json`, {
+        body,
+      });
       return res.data;
     },
   },
@@ -59,12 +64,20 @@ export const transactionTools: ToolDefinition[] = [
     description: TOOL_DESCRIPTIONS.spreedly_transaction_capture,
     schema: CaptureTransactionSchema.shape,
     handler: async (params, { transport }) => {
-      const { transaction_token, amount, currency_code } = params as { transaction_token: string; amount?: number; currency_code?: string };
+      const { transaction_token, amount, currency_code } = params as {
+        transaction_token: string;
+        amount?: number;
+        currency_code?: string;
+      };
       const txnBody: Record<string, unknown> = {};
       if (amount !== undefined) txnBody.amount = amount;
       if (currency_code !== undefined) txnBody.currency_code = currency_code;
       const body = { transaction: txnBody };
-      const res = await transport.request("POST", `/transactions/${transaction_token}/capture.json`, { body });
+      const res = await transport.request(
+        "POST",
+        `/transactions/${transaction_token}/capture.json`,
+        { body },
+      );
       return res.data;
     },
   },
@@ -83,12 +96,20 @@ export const transactionTools: ToolDefinition[] = [
     description: TOOL_DESCRIPTIONS.spreedly_transaction_credit,
     schema: CreditTransactionSchema.shape,
     handler: async (params, { transport }) => {
-      const { transaction_token, amount, currency_code } = params as { transaction_token: string; amount?: number; currency_code?: string };
+      const { transaction_token, amount, currency_code } = params as {
+        transaction_token: string;
+        amount?: number;
+        currency_code?: string;
+      };
       const txnBody: Record<string, unknown> = {};
       if (amount !== undefined) txnBody.amount = amount;
       if (currency_code !== undefined) txnBody.currency_code = currency_code;
       const body = { transaction: txnBody };
-      const res = await transport.request("POST", `/transactions/${transaction_token}/credit.json`, { body });
+      const res = await transport.request(
+        "POST",
+        `/transactions/${transaction_token}/credit.json`,
+        { body },
+      );
       return res.data;
     },
   },
@@ -98,7 +119,10 @@ export const transactionTools: ToolDefinition[] = [
     schema: CompleteTransactionSchema.shape,
     handler: async (params, { transport }) => {
       const { transaction_token } = params as { transaction_token: string };
-      const res = await transport.request("POST", `/transactions/${transaction_token}/complete.json`);
+      const res = await transport.request(
+        "POST",
+        `/transactions/${transaction_token}/complete.json`,
+      );
       return res.data;
     },
   },
@@ -108,7 +132,10 @@ export const transactionTools: ToolDefinition[] = [
     schema: ConfirmTransactionSchema.shape,
     handler: async (params, { transport }) => {
       const { transaction_token } = params as { transaction_token: string };
-      const res = await transport.request("POST", `/transactions/${transaction_token}/confirm.json`);
+      const res = await transport.request(
+        "POST",
+        `/transactions/${transaction_token}/confirm.json`,
+      );
       return res.data;
     },
   },

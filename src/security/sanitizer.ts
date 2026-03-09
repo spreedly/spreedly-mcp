@@ -1,5 +1,7 @@
-// eslint-disable-next-line no-misleading-character-class -- intentionally matching individual invisible/control characters
-const INVISIBLE_CHARS = /[\u200B\u200C\u200D\u200E\u200F\uFEFF\u2028\u2029\u202A-\u202E\u2060-\u2064\u2066-\u2069\u00AD]/g;
+/* eslint-disable no-misleading-character-class -- intentionally matching individual invisible/control characters */
+const INVISIBLE_CHARS =
+  /[\u200B\u200C\u200D\u200E\u200F\uFEFF\u2028\u2029\u202A-\u202E\u2060-\u2064\u2066-\u2069\u00AD]/g;
+/* eslint-enable no-misleading-character-class */
 
 const MCP_PROTOCOL_FRAGMENTS = [
   "tool_call",
@@ -24,9 +26,10 @@ export function sanitizeString(value: string, fieldName?: string): string {
   let cleaned = value.replace(INVISIBLE_CHARS, "");
   cleaned = cleaned.trim();
 
-  const maxLen = fieldName && fieldName.toLowerCase().includes("token")
-    ? MAX_FIELD_LENGTHS.token
-    : MAX_FIELD_LENGTHS.default;
+  const maxLen =
+    fieldName && fieldName.toLowerCase().includes("token")
+      ? MAX_FIELD_LENGTHS.token
+      : MAX_FIELD_LENGTHS.default;
 
   if (cleaned.length > maxLen) {
     cleaned = cleaned.slice(0, maxLen);

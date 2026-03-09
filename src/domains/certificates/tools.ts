@@ -48,8 +48,13 @@ export const certificateTools: ToolDefinition[] = [
     description: TOOL_DESCRIPTIONS.spreedly_certificate_update,
     schema: UpdateCertificateSchema.shape,
     handler: async (params, { transport }) => {
-      const { certificate_token, certificate } = params as { certificate_token: string; certificate: Record<string, unknown> };
-      const res = await transport.request("PUT", `/certificates/${certificate_token}.json`, { body: { certificate } });
+      const { certificate_token, certificate } = params as {
+        certificate_token: string;
+        certificate: Record<string, unknown>;
+      };
+      const res = await transport.request("PUT", `/certificates/${certificate_token}.json`, {
+        body: { certificate },
+      });
       return res.data;
     },
   },

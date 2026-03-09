@@ -36,7 +36,12 @@ describe("transaction tools", () => {
   describe("spreedly_transaction_capture", () => {
     it("captures full amount", async () => {
       const { transport, calls } = createMockTransport(
-        new Map([["POST /transactions/FakeTxToken_xyz789/capture.json", { data: fakeTransaction({ transaction_type: "Capture" }) }]]),
+        new Map([
+          [
+            "POST /transactions/FakeTxToken_xyz789/capture.json",
+            { data: fakeTransaction({ transaction_type: "Capture" }) },
+          ],
+        ]),
       );
       await findTool("spreedly_transaction_capture").handler(
         { transaction_token: "FakeTxToken_xyz789" },
@@ -47,7 +52,12 @@ describe("transaction tools", () => {
 
     it("captures partial amount", async () => {
       const { transport, calls } = createMockTransport(
-        new Map([["POST /transactions/FakeTxToken_xyz789/capture.json", { data: fakeTransaction({ amount: 500 }) }]]),
+        new Map([
+          [
+            "POST /transactions/FakeTxToken_xyz789/capture.json",
+            { data: fakeTransaction({ amount: 500 }) },
+          ],
+        ]),
       );
       await findTool("spreedly_transaction_capture").handler(
         { transaction_token: "FakeTxToken_xyz789", amount: 500 },
@@ -60,7 +70,12 @@ describe("transaction tools", () => {
   describe("spreedly_transaction_void", () => {
     it("voids a transaction", async () => {
       const { transport, calls } = createMockTransport(
-        new Map([["POST /transactions/FakeTxToken_xyz789/void.json", { data: fakeTransaction({ transaction_type: "Void" }) }]]),
+        new Map([
+          [
+            "POST /transactions/FakeTxToken_xyz789/void.json",
+            { data: fakeTransaction({ transaction_type: "Void" }) },
+          ],
+        ]),
       );
       await findTool("spreedly_transaction_void").handler(
         { transaction_token: "FakeTxToken_xyz789" },
@@ -73,7 +88,12 @@ describe("transaction tools", () => {
   describe("spreedly_transaction_credit", () => {
     it("refunds a transaction", async () => {
       const { transport, calls } = createMockTransport(
-        new Map([["POST /transactions/FakeTxToken_xyz789/credit.json", { data: fakeTransaction({ transaction_type: "Credit" }) }]]),
+        new Map([
+          [
+            "POST /transactions/FakeTxToken_xyz789/credit.json",
+            { data: fakeTransaction({ transaction_type: "Credit" }) },
+          ],
+        ]),
       );
       await findTool("spreedly_transaction_credit").handler(
         { transaction_token: "FakeTxToken_xyz789" },
@@ -86,7 +106,12 @@ describe("transaction tools", () => {
   describe("spreedly_transaction_transcript", () => {
     it("gets transaction transcript", async () => {
       const { transport } = createMockTransport(
-        new Map([["GET /transactions/FakeTxToken_xyz789/transcript", { data: "Request: ...\nResponse: ..." }]]),
+        new Map([
+          [
+            "GET /transactions/FakeTxToken_xyz789/transcript",
+            { data: "Request: ...\nResponse: ..." },
+          ],
+        ]),
       );
       const result = await findTool("spreedly_transaction_transcript").handler(
         { transaction_token: "FakeTxToken_xyz789" },
@@ -99,14 +124,23 @@ describe("transaction tools", () => {
   describe("spreedly_transaction_authorize_workflow", () => {
     it("creates workflow authorization", async () => {
       const { transport, calls } = createMockTransport(
-        new Map([["POST /transactions/authorize.json", { data: fakeTransaction({ transaction_type: "Authorization" }) }]]),
+        new Map([
+          [
+            "POST /transactions/authorize.json",
+            { data: fakeTransaction({ transaction_type: "Authorization" }) },
+          ],
+        ]),
       );
       await findTool("spreedly_transaction_authorize_workflow").handler(
         { payment_method_token: "FakePMToken_pm001", amount: 1000, currency_code: "USD" },
         { transport },
       );
       expect(calls[0].options?.body).toEqual({
-        transaction: { payment_method_token: "FakePMToken_pm001", amount: 1000, currency_code: "USD" },
+        transaction: {
+          payment_method_token: "FakePMToken_pm001",
+          amount: 1000,
+          currency_code: "USD",
+        },
       });
     });
   });

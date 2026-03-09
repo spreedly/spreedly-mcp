@@ -100,9 +100,9 @@ describe("sanitizeParams", () => {
   });
 
   it("throws on injection attempts inside arrays", () => {
-    expect(() =>
-      sanitizeParams({ items: ["normal", "tool_call bad stuff"] }),
-    ).toThrow('Invalid input detected in array field "items".');
+    expect(() => sanitizeParams({ items: ["normal", "tool_call bad stuff"] })).toThrow(
+      'Invalid input detected in array field "items".',
+    );
   });
 
   it("passes through non-string non-object array values", () => {

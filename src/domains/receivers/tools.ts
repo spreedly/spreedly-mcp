@@ -61,8 +61,13 @@ export const receiverTools: ToolDefinition[] = [
     description: TOOL_DESCRIPTIONS.spreedly_receiver_update,
     schema: UpdateReceiverSchema.shape,
     handler: async (params, { transport }) => {
-      const { receiver_token, receiver } = params as { receiver_token: string; receiver: Record<string, unknown> };
-      const res = await transport.request("PUT", `/receivers/${receiver_token}.json`, { body: { receiver } });
+      const { receiver_token, receiver } = params as {
+        receiver_token: string;
+        receiver: Record<string, unknown>;
+      };
+      const res = await transport.request("PUT", `/receivers/${receiver_token}.json`, {
+        body: { receiver },
+      });
       return res.data;
     },
   },
@@ -81,9 +86,13 @@ export const receiverTools: ToolDefinition[] = [
     description: TOOL_DESCRIPTIONS.spreedly_receiver_deliver,
     schema: DeliverReceiverSchema.shape,
     handler: async (params, { transport }) => {
-      const { receiver_token, ...delivery } = params as Record<string, unknown> & { receiver_token: string };
+      const { receiver_token, ...delivery } = params as Record<string, unknown> & {
+        receiver_token: string;
+      };
       const body = { delivery };
-      const res = await transport.request("POST", `/receivers/${receiver_token}/deliver.json`, { body });
+      const res = await transport.request("POST", `/receivers/${receiver_token}/deliver.json`, {
+        body,
+      });
       return res.data;
     },
   },
@@ -92,9 +101,14 @@ export const receiverTools: ToolDefinition[] = [
     description: TOOL_DESCRIPTIONS.spreedly_receiver_export,
     schema: ExportReceiverSchema.shape,
     handler: async (params, { transport }) => {
-      const { receiver_token, payment_method_token } = params as { receiver_token: string; payment_method_token: string };
+      const { receiver_token, payment_method_token } = params as {
+        receiver_token: string;
+        payment_method_token: string;
+      };
       const body = { export: { payment_method_token } };
-      const res = await transport.request("POST", `/receivers/${receiver_token}/export.json`, { body });
+      const res = await transport.request("POST", `/receivers/${receiver_token}/export.json`, {
+        body,
+      });
       return res.data;
     },
   },

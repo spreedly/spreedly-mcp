@@ -99,5 +99,8 @@ export interface ToolDefinition {
   name: string;
   description: string;
   schema: Record<string, unknown>;
-  handler: (params: Record<string, unknown>, ctx: { transport: import("../transport/types.js").SpreedlyTransport }) => Promise<unknown>;
+  handler: (
+    params: Record<string, unknown>,
+    ctx: { transport: import("../transport/types.js").SpreedlyTransport },
+  ) => Promise<unknown>;
 }

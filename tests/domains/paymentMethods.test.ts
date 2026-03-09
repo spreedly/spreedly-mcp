@@ -1,7 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { paymentMethodTools } from "../../src/domains/paymentMethods/tools.js";
 import { createMockTransport } from "../helpers/transport.js";
-import { fakePaymentMethod, fakePaymentMethodList, fakeTransactionList, fakeEvent } from "../helpers/fixtures.js";
+import {
+  fakePaymentMethod,
+  fakePaymentMethodList,
+  fakeTransactionList,
+  fakeEvent,
+} from "../helpers/fixtures.js";
 
 function findTool(name: string) {
   const tool = paymentMethodTools.find((t) => t.name === name);
@@ -16,7 +21,17 @@ describe("payment method tools", () => {
         new Map([["POST /payment_methods.json", { data: fakePaymentMethod() }]]),
       );
       await findTool("spreedly_payment_method_create").handler(
-        { payment_method: { credit_card: { first_name: "Test", last_name: "User", number: "4111111111111111", month: 12, year: 2030 } } },
+        {
+          payment_method: {
+            credit_card: {
+              first_name: "Test",
+              last_name: "User",
+              number: "4111111111111111",
+              month: 12,
+              year: 2030,
+            },
+          },
+        },
         { transport },
       );
       expect(calls[0].method).toBe("POST");
@@ -49,7 +64,9 @@ describe("payment method tools", () => {
   describe("spreedly_payment_method_retain", () => {
     it("retains a payment method", async () => {
       const { transport, calls } = createMockTransport(
-        new Map([["PUT /payment_methods/FakePMToken_pm001/retain.json", { data: fakePaymentMethod() }]]),
+        new Map([
+          ["PUT /payment_methods/FakePMToken_pm001/retain.json", { data: fakePaymentMethod() }],
+        ]),
       );
       await findTool("spreedly_payment_method_retain").handler(
         { payment_method_token: "FakePMToken_pm001" },
@@ -62,7 +79,12 @@ describe("payment method tools", () => {
   describe("spreedly_payment_method_redact", () => {
     it("redacts a payment method", async () => {
       const { transport, calls } = createMockTransport(
-        new Map([["PUT /payment_methods/FakePMToken_pm001/redact.json", { data: fakePaymentMethod({ storage_state: "redacted" }) }]]),
+        new Map([
+          [
+            "PUT /payment_methods/FakePMToken_pm001/redact.json",
+            { data: fakePaymentMethod({ storage_state: "redacted" }) },
+          ],
+        ]),
       );
       await findTool("spreedly_payment_method_redact").handler(
         { payment_method_token: "FakePMToken_pm001" },
@@ -75,7 +97,12 @@ describe("payment method tools", () => {
   describe("spreedly_payment_method_list_transactions", () => {
     it("lists transactions for a payment method", async () => {
       const { transport } = createMockTransport(
-        new Map([["GET /payment_methods/FakePMToken_pm001/transactions.json", { data: fakeTransactionList() }]]),
+        new Map([
+          [
+            "GET /payment_methods/FakePMToken_pm001/transactions.json",
+            { data: fakeTransactionList() },
+          ],
+        ]),
       );
       const result = await findTool("spreedly_payment_method_list_transactions").handler(
         { payment_method_token: "FakePMToken_pm001" },

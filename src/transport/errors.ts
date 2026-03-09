@@ -1,6 +1,7 @@
 export class SpreedlyError extends Error {
   readonly code: string;
   readonly statusCode?: number;
+  requestId?: string;
 
   constructor(message: string, code: string, statusCode?: number) {
     super(message);
@@ -11,14 +12,18 @@ export class SpreedlyError extends Error {
 }
 
 export class SpreedlyAuthError extends SpreedlyError {
-  constructor(message = "Authentication failed. Verify your SPREEDLY_ENVIRONMENT_KEY and SPREEDLY_ACCESS_SECRET are correct.") {
+  constructor(
+    message = "Authentication failed. Verify your SPREEDLY_ENVIRONMENT_KEY and SPREEDLY_ACCESS_SECRET are correct.",
+  ) {
     super(message, "AUTH_ERROR", 401);
     this.name = "SpreedlyAuthError";
   }
 }
 
 export class SpreedlyForbiddenError extends SpreedlyError {
-  constructor(message = "Access denied. Your credentials do not have permission for this operation.") {
+  constructor(
+    message = "Access denied. Your credentials do not have permission for this operation.",
+  ) {
     super(message, "FORBIDDEN", 403);
     this.name = "SpreedlyForbiddenError";
   }
@@ -78,39 +83,54 @@ export class SpreedlyPaymentError extends SpreedlyError {
   }
 }
 
-export function mapHttpStatusToError(status: number, body: unknown): SpreedlyError {
+export function mapHttpStatusToError(
+  status: number,
+  body: unknown,
+  requestId?: string,
+): SpreedlyError {
   const message = extractErrorMessage(body);
 
+  let error: SpreedlyError;
   switch (status) {
     case 401:
-      return new SpreedlyAuthError();
+      error = new SpreedlyAuthError();
+      break;
     case 402:
-      return new SpreedlyPaymentError(message || "Payment required.");
+      error = new SpreedlyPaymentError(message || "Payment required.");
+      break;
     case 403:
-      return new SpreedlyForbiddenError();
+      error = new SpreedlyForbiddenError();
+      break;
     case 404:
-      return new SpreedlyNotFoundError();
+      error = new SpreedlyNotFoundError();
+      break;
     case 408:
-      return new SpreedlyError("Request timed out.", "TIMEOUT", 408);
+      error = new SpreedlyError("Request timed out.", "TIMEOUT", 408);
+      break;
     case 422:
-      return new SpreedlyValidationError(
+      error = new SpreedlyValidationError(
         message || "Validation failed.",
         extractFieldErrors(body),
       );
-    case 429: {
-      return new SpreedlyRateLimitError();
-    }
+      break;
+    case 429:
+      error = new SpreedlyRateLimitError();
+      break;
     case 502:
     case 503:
     case 504:
-      return new SpreedlyGatewayError(status);
+      error = new SpreedlyGatewayError(status);
+      break;
     default:
-      return new SpreedlyError(
+      error = new SpreedlyError(
         message || `Unexpected API response (HTTP ${status}).`,
         "API_ERROR",
         status,
       );
+      break;
   }
+  error.requestId = requestId;
+  return error;
 }
 
 function extractErrorMessage(body: unknown): string | undefined {
@@ -122,7 +142,11 @@ function extractErrorMessage(body: unknown): string | undefined {
       const messages = obj.errors
         .map((e: unknown) => {
           if (typeof e === "string") return e;
-          if (e && typeof e === "object" && typeof (e as Record<string, unknown>).message === "string") {
+          if (
+            e &&
+            typeof e === "object" &&
+            typeof (e as Record<string, unknown>).message === "string"
+          ) {
             return (e as Record<string, unknown>).message as string;
           }
           return undefined;
