@@ -119,8 +119,7 @@ function formatMatrix(results: EvalResult[]): string {
 
   const modelColWidth = Math.max(...modelNames.map((m) => m.length), 5);
   const header =
-    "Scenario".padEnd(55) +
-    modelNames.map((m) => m.padStart(modelColWidth + 2)).join("");
+    "Scenario".padEnd(55) + modelNames.map((m) => m.padStart(modelColWidth + 2)).join("");
   lines.push("\n" + header);
   lines.push("-".repeat(header.length));
 
@@ -130,19 +129,15 @@ function formatMatrix(results: EvalResult[]): string {
       return sr?.passed ? "PASS" : "FAIL";
     });
     const row =
-      name.slice(0, 53).padEnd(55) +
-      cells.map((c) => c.padStart(modelColWidth + 2)).join("");
+      name.slice(0, 53).padEnd(55) + cells.map((c) => c.padStart(modelColWidth + 2)).join("");
     lines.push(row);
   }
 
   lines.push("-".repeat(header.length));
 
-  const totals = results.map(
-    (r) => `${r.totalPassed}/${r.totalPassed + r.totalFailed}`,
-  );
+  const totals = results.map((r) => `${r.totalPassed}/${r.totalPassed + r.totalFailed}`);
   const totalRow =
-    "Total passed".padEnd(55) +
-    totals.map((t) => t.padStart(modelColWidth + 2)).join("");
+    "Total passed".padEnd(55) + totals.map((t) => t.padStart(modelColWidth + 2)).join("");
   lines.push(totalRow);
 
   lines.push("\n");
@@ -164,7 +159,10 @@ function loadDotenv(): void {
       const eqIdx = trimmed.indexOf("=");
       if (eqIdx === -1) continue;
       const key = trimmed.slice(0, eqIdx).trim();
-      const value = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, "");
+      const value = trimmed
+        .slice(eqIdx + 1)
+        .trim()
+        .replace(/^["']|["']$/g, "");
       if (!process.env[key]) {
         process.env[key] = value;
       }

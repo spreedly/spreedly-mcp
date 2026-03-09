@@ -3,10 +3,7 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { allTools } from "../../src/domains/index.js";
-import {
-  filterTools,
-  getToolDescription,
-} from "../../src/security/toolPolicy.js";
+import { filterTools, getToolDescription } from "../../src/security/toolPolicy.js";
 import { createMockTransport } from "../../tests/helpers/transport.js";
 import type {
   Scenario,
@@ -27,9 +24,10 @@ function loadSystemPrompt(): string {
   return readFileSync(agentsPath, "utf-8");
 }
 
-function toolsToLLMFormat(
-  policy: Scenario["policy"],
-): { llmTools: LLMToolDef[]; enabledToolNames: Set<string> } {
+function toolsToLLMFormat(policy: Scenario["policy"]): {
+  llmTools: LLMToolDef[];
+  enabledToolNames: Set<string>;
+} {
   const enabled = filterTools(allTools, policy);
   const llmTools: LLMToolDef[] = enabled.map((tool) => {
     const description = getToolDescription(tool);

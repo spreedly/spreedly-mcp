@@ -1,9 +1,6 @@
 import type { ToolCallRecord, GradeResult, Grader } from "./types.js";
 
-export function toolCalled(
-  toolName: string,
-  opts?: { times?: number },
-): Grader {
+export function toolCalled(toolName: string, opts?: { times?: number }): Grader {
   return (calls: ToolCallRecord[]): GradeResult => {
     const matching = calls.filter((c) => c.tool === toolName);
     if (opts?.times !== undefined) {
@@ -38,10 +35,7 @@ export function toolNotCalled(toolName: string): Grader {
   };
 }
 
-export function toolCalledWith(
-  toolName: string,
-  expectedArgs: Record<string, unknown>,
-): Grader {
+export function toolCalledWith(toolName: string, expectedArgs: Record<string, unknown>): Grader {
   return (calls: ToolCallRecord[]): GradeResult => {
     const matching = calls.filter((c) => c.tool === toolName);
     if (matching.length === 0) {
@@ -52,9 +46,7 @@ export function toolCalledWith(
     }
 
     const found = matching.some((call) =>
-      Object.entries(expectedArgs).every(
-        ([key, value]) => call.arguments[key] === value,
-      ),
+      Object.entries(expectedArgs).every(([key, value]) => call.arguments[key] === value),
     );
 
     return {
@@ -66,10 +58,7 @@ export function toolCalledWith(
   };
 }
 
-export function argumentSameAcrossCalls(
-  toolName: string,
-  argName: string,
-): Grader {
+export function argumentSameAcrossCalls(toolName: string, argName: string): Grader {
   return (calls: ToolCallRecord[]): GradeResult => {
     const matching = calls.filter((c) => c.tool === toolName);
     if (matching.length < 2) {
@@ -93,10 +82,7 @@ export function argumentSameAcrossCalls(
   };
 }
 
-export function argumentDiffersAcrossCalls(
-  toolName: string,
-  argName: string,
-): Grader {
+export function argumentDiffersAcrossCalls(toolName: string, argName: string): Grader {
   return (calls: ToolCallRecord[]): GradeResult => {
     const matching = calls.filter((c) => c.tool === toolName);
     if (matching.length < 2) {

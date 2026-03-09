@@ -7,10 +7,7 @@ import {
   argumentSameAcrossCalls,
   callOrder,
 } from "../lib/graders.js";
-import {
-  fakeGateway,
-  fakeTransaction,
-} from "../../tests/helpers/fixtures.js";
+import { fakeGateway, fakeTransaction } from "../../tests/helpers/fixtures.js";
 
 const echoAuthorize: MockResponseFn = (_method, path, options) => {
   const body = options?.body as { transaction?: Record<string, unknown> } | undefined;
@@ -82,10 +79,7 @@ export const noReusePaymentMethodAcrossCustomers: Scenario = {
   graders: [
     toolCalled("spreedly_gateway_authorize", { times: 2 }),
     toolNotCalled("spreedly_gateway_create"),
-    argumentDiffersAcrossCalls(
-      "spreedly_gateway_authorize",
-      "payment_method_token",
-    ),
+    argumentDiffersAcrossCalls("spreedly_gateway_authorize", "payment_method_token"),
     argumentSameAcrossCalls("spreedly_gateway_authorize", "gateway_token"),
   ],
 };
@@ -131,10 +125,7 @@ export const reuseGatewayTokenForSameProcessor: Scenario = {
     toolCalled("spreedly_gateway_purchase", { times: 2 }),
     toolNotCalled("spreedly_gateway_create"),
     argumentSameAcrossCalls("spreedly_gateway_purchase", "gateway_token"),
-    argumentDiffersAcrossCalls(
-      "spreedly_gateway_purchase",
-      "payment_method_token",
-    ),
+    argumentDiffersAcrossCalls("spreedly_gateway_purchase", "payment_method_token"),
   ],
 };
 

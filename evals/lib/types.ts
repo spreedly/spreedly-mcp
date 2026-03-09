@@ -62,8 +62,5 @@ export interface LLMToolDef {
 }
 
 export interface LLMProvider {
-  chat(
-    messages: LLMMessage[],
-    tools: LLMToolDef[],
-  ): Promise<LLMMessage>;
+  chat(messages: LLMMessage[], tools: LLMToolDef[]): Promise<LLMMessage>;
 }

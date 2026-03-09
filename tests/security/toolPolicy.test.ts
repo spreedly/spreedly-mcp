@@ -189,17 +189,29 @@ describe("isToolEnabled", () => {
 
   it("respects paymentMethodTokenizationEnabled flag", () => {
     expect(isToolEnabled("spreedly_payment_method_create", ALL_DISABLED)).toBe(false);
-    expect(isToolEnabled("spreedly_payment_method_create", { ...ALL_DISABLED, paymentMethodTokenizationEnabled: true })).toBe(true);
+    expect(
+      isToolEnabled("spreedly_payment_method_create", {
+        ...ALL_DISABLED,
+        paymentMethodTokenizationEnabled: true,
+      }),
+    ).toBe(true);
   });
 
   it("respects transactionInitiationEnabled flag", () => {
     expect(isToolEnabled("spreedly_gateway_authorize", ALL_DISABLED)).toBe(false);
-    expect(isToolEnabled("spreedly_gateway_authorize", { ...ALL_DISABLED, transactionInitiationEnabled: true })).toBe(true);
+    expect(
+      isToolEnabled("spreedly_gateway_authorize", {
+        ...ALL_DISABLED,
+        transactionInitiationEnabled: true,
+      }),
+    ).toBe(true);
   });
 
   it("respects administrativeEnabled flag", () => {
     expect(isToolEnabled("spreedly_gateway_create", ALL_DISABLED)).toBe(false);
-    expect(isToolEnabled("spreedly_gateway_create", { ...ALL_DISABLED, administrativeEnabled: true })).toBe(true);
+    expect(
+      isToolEnabled("spreedly_gateway_create", { ...ALL_DISABLED, administrativeEnabled: true }),
+    ).toBe(true);
   });
 });
 
@@ -289,9 +301,7 @@ describe("getEnabledCategories", () => {
 
 describe("enriched description content", () => {
   it("every transaction_initiation tool description contains [Transaction] guidance", () => {
-    const txnTools = allTools.filter(
-      (t) => getToolCategory(t.name) === "transaction_initiation",
-    );
+    const txnTools = allTools.filter((t) => getToolCategory(t.name) === "transaction_initiation");
     expect(txnTools.length).toBeGreaterThan(0);
 
     for (const tool of txnTools) {
@@ -302,9 +312,7 @@ describe("enriched description content", () => {
   });
 
   it("every administrative tool description contains [Configuration] guidance", () => {
-    const adminTools = allTools.filter(
-      (t) => getToolCategory(t.name) === "administrative",
-    );
+    const adminTools = allTools.filter((t) => getToolCategory(t.name) === "administrative");
     expect(adminTools.length).toBeGreaterThan(0);
 
     for (const tool of adminTools) {
@@ -335,9 +343,7 @@ describe("enriched description content", () => {
   });
 
   it("always_enabled tool descriptions are NOT enriched with category guidance", () => {
-    const enabledTools = allTools.filter(
-      (t) => getToolCategory(t.name) === "always_enabled",
-    );
+    const enabledTools = allTools.filter((t) => getToolCategory(t.name) === "always_enabled");
     expect(enabledTools.length).toBeGreaterThan(0);
 
     for (const tool of enabledTools) {
@@ -398,16 +404,10 @@ describe("complete tool coverage", () => {
     const transactionCount = allTools.filter(
       (t) => getToolCategory(t.name) === "transaction_initiation",
     ).length;
-    const adminCount = allTools.filter(
-      (t) => getToolCategory(t.name) === "administrative",
-    ).length;
+    const adminCount = allTools.filter((t) => getToolCategory(t.name) === "administrative").length;
 
     const total =
-      alwaysEnabledCount +
-      alwaysDisabledCount +
-      tokenizationCount +
-      transactionCount +
-      adminCount;
+      alwaysEnabledCount + alwaysDisabledCount + tokenizationCount + transactionCount + adminCount;
     expect(total).toBe(allTools.length);
   });
 });

@@ -88,10 +88,7 @@ export function getToolCategory(toolName: string): ToolCategory {
   return TOOL_CATEGORIES[toolName] ?? "always_enabled";
 }
 
-export function isToolEnabled(
-  toolName: string,
-  config: ToolPolicyConfig,
-): boolean {
+export function isToolEnabled(toolName: string, config: ToolPolicyConfig): boolean {
   const category = getToolCategory(toolName);
   switch (category) {
     case "always_enabled":
@@ -107,10 +104,7 @@ export function isToolEnabled(
   }
 }
 
-export function filterTools(
-  tools: ToolDefinition[],
-  config: ToolPolicyConfig,
-): ToolDefinition[] {
+export function filterTools(tools: ToolDefinition[], config: ToolPolicyConfig): ToolDefinition[] {
   return tools.filter((tool) => isToolEnabled(tool.name, config));
 }
 
@@ -129,22 +123,16 @@ export function parseBoolEnv(value: unknown): boolean {
 
 export function readPolicyFromEnv(): ToolPolicyConfig {
   return {
-    paymentMethodTokenizationEnabled: parseBoolEnv(
-      process.env.PAYMENT_METHOD_TOKENIZATION_ENABLED,
-    ),
-    transactionInitiationEnabled: parseBoolEnv(
-      process.env.TRANSACTION_INITIATION_ENABLED,
-    ),
+    paymentMethodTokenizationEnabled: parseBoolEnv(process.env.PAYMENT_METHOD_TOKENIZATION_ENABLED),
+    transactionInitiationEnabled: parseBoolEnv(process.env.TRANSACTION_INITIATION_ENABLED),
     administrativeEnabled: parseBoolEnv(process.env.ADMINISTRATIVE_ENABLED),
   };
 }
 
 export function getEnabledCategories(config: ToolPolicyConfig): string[] {
   const categories: string[] = ["always_enabled"];
-  if (config.paymentMethodTokenizationEnabled)
-    categories.push("payment_method_tokenization");
-  if (config.transactionInitiationEnabled)
-    categories.push("transaction_initiation");
+  if (config.paymentMethodTokenizationEnabled) categories.push("payment_method_tokenization");
+  if (config.transactionInitiationEnabled) categories.push("transaction_initiation");
   if (config.administrativeEnabled) categories.push("administrative");
   return categories;
 }

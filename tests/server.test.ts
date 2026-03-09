@@ -39,9 +39,9 @@ describe("createServer", () => {
   });
 
   it("throws when environmentKey is an empty string", () => {
-    expect(() =>
-      createServer(transport, defaultPolicy, { environmentKey: "" }),
-    ).toThrow("non-empty string");
+    expect(() => createServer(transport, defaultPolicy, { environmentKey: "" })).toThrow(
+      "non-empty string",
+    );
   });
 
   it("throws when environmentKey is a non-string value", () => {

@@ -17,13 +17,15 @@ export interface MockResponseEntry {
   headers?: Record<string, string>;
 }
 
-export type MockResponseFn = (method: string, path: string, options?: RequestOptions) => MockResponseEntry;
+export type MockResponseFn = (
+  method: string,
+  path: string,
+  options?: RequestOptions,
+) => MockResponseEntry;
 
 export type MockResponseValue = MockResponseEntry | MockResponseFn;
 
-export function createMockTransport(
-  responses: Map<string, MockResponseValue> = new Map(),
-) {
+export function createMockTransport(responses: Map<string, MockResponseValue> = new Map()) {
   const calls: MockCall[] = [];
 
   const transport: SpreedlyTransport = Object.freeze({

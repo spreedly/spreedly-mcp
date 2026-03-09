@@ -61,6 +61,7 @@ Each eval scenario:
 ### token-reuse
 
 Verifies correct token handling:
+
 - Different `payment_method_token` for different customers
 - Reusing `gateway_token` when routing to the same processor
 - Using `transaction_token` from authorize response for capture
@@ -68,6 +69,7 @@ Verifies correct token handling:
 ### policy-enforcement
 
 Verifies the AI respects disabled tool categories:
+
 - Cannot process payments when `TRANSACTION_INITIATION_ENABLED=false`
 - Cannot create gateways when `ADMINISTRATIVE_ENABLED=false`
 - Cannot tokenize cards when `PAYMENT_METHOD_TOKENIZATION_ENABLED=false`
@@ -75,6 +77,7 @@ Verifies the AI respects disabled tool categories:
 ### wasteful-patterns
 
 Verifies the AI avoids unnecessary resource creation:
+
 - Lists gateways before creating when one exists
 - Does not create a gateway for every transaction
 - Checks for existing resources before creating duplicates
@@ -96,16 +99,9 @@ export const myScenario: Scenario = {
     transactionInitiationEnabled: true,
     administrativeEnabled: false,
   },
-  mockResponses: new Map([
-    ["GET /gateways.json", { data: { gateways: [fakeGateway().gateway] } }],
-  ]),
-  messages: [
-    { role: "user", content: "Your prompt to the AI" },
-  ],
-  graders: [
-    toolCalled("spreedly_gateway_purchase"),
-    toolNotCalled("spreedly_gateway_create"),
-  ],
+  mockResponses: new Map([["GET /gateways.json", { data: { gateways: [fakeGateway().gateway] } }]]),
+  messages: [{ role: "user", content: "Your prompt to the AI" }],
+  graders: [toolCalled("spreedly_gateway_purchase"), toolNotCalled("spreedly_gateway_create")],
 };
 ```
 
@@ -113,15 +109,15 @@ Then add it to the appropriate array in the scenario file, and re-export from `e
 
 ## Available graders
 
-| Grader | Description |
-|--------|-------------|
-| `toolCalled(name, { times? })` | Tool was called (optionally exactly N times) |
-| `toolNotCalled(name)` | Tool was never called |
-| `toolCalledWith(name, args)` | Tool was called with specific argument values |
-| `argumentSameAcrossCalls(name, arg)` | Argument has same value across all calls to tool |
-| `argumentDiffersAcrossCalls(name, arg)` | Argument differs across calls to tool |
-| `callOrder(first, second)` | First tool was called before second tool |
-| `maxCalls(name, max)` | Tool was called at most N times |
+| Grader                                  | Description                                      |
+| --------------------------------------- | ------------------------------------------------ |
+| `toolCalled(name, { times? })`          | Tool was called (optionally exactly N times)     |
+| `toolNotCalled(name)`                   | Tool was never called                            |
+| `toolCalledWith(name, args)`            | Tool was called with specific argument values    |
+| `argumentSameAcrossCalls(name, arg)`    | Argument has same value across all calls to tool |
+| `argumentDiffersAcrossCalls(name, arg)` | Argument differs across calls to tool            |
+| `callOrder(first, second)`              | First tool was called before second tool         |
+| `maxCalls(name, max)`                   | Tool was called at most N times                  |
 
 ## Using a different LLM provider
 

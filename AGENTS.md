@@ -6,12 +6,12 @@ This document is for AI agents that interact with the Spreedly MCP server. It de
 
 Spreedly sits in a payment chain that can involve multiple levels. This document uses precise terms to avoid confusion:
 
-| Term | Who they are | Example |
-|------|-------------|---------|
-| **Operator** | The person or system talking to you (the AI agent) via this MCP server. They manage the Spreedly environment. | A developer, a platform engineer, or an automated integration |
-| **Merchant** | The business on whose behalf a transaction is processed. May be the operator themselves, or a sub-merchant under a payment facilitator. | An online retailer, a SaaS company |
-| **Payment facilitator** (PayFac) | An operator who processes payments on behalf of multiple merchants. Each merchant is represented as a sub-merchant in Spreedly. | A marketplace platform, a merchant aggregator |
-| **Customer** (cardholder) | The person whose payment method is being charged. They are the end consumer. | A shopper buying a product |
+| Term                             | Who they are                                                                                                                            | Example                                                       |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| **Operator**                     | The person or system talking to you (the AI agent) via this MCP server. They manage the Spreedly environment.                           | A developer, a platform engineer, or an automated integration |
+| **Merchant**                     | The business on whose behalf a transaction is processed. May be the operator themselves, or a sub-merchant under a payment facilitator. | An online retailer, a SaaS company                            |
+| **Payment facilitator** (PayFac) | An operator who processes payments on behalf of multiple merchants. Each merchant is represented as a sub-merchant in Spreedly.         | A marketplace platform, a merchant aggregator                 |
+| **Customer** (cardholder)        | The person whose payment method is being charged. They are the end consumer.                                                            | A shopper buying a product                                    |
 
 The operator may be any of these: a direct merchant using Spreedly for their own payments, a payment facilitator managing many merchants, or a developer building an integration. When reasoning about tokens and operations, always consider which level of this chain the current operation targets.
 
@@ -48,11 +48,11 @@ When you receive an error, the message is actionable. Do not retry auth errors; 
 
 The server uses three environment variable flags to control which tool categories are available. All default to `false` (disabled). Tools in a disabled category are not registered and cannot be called.
 
-| Variable | Default | Controls |
-|----------|---------|----------|
-| `PAYMENT_METHOD_TOKENIZATION_ENABLED` | `false` | Tools that send sensitive card data (PAN/CVV) to Spreedly |
-| `TRANSACTION_INITIATION_ENABLED` | `false` | Tools that initiate action on a payment method with a third party |
-| `ADMINISTRATIVE_ENABLED` | `false` | Tools that create or modify configuration objects (gateways, environments, certificates, etc.) |
+| Variable                              | Default | Controls                                                                                       |
+| ------------------------------------- | ------- | ---------------------------------------------------------------------------------------------- |
+| `PAYMENT_METHOD_TOKENIZATION_ENABLED` | `false` | Tools that send sensitive card data (PAN/CVV) to Spreedly                                      |
+| `TRANSACTION_INITIATION_ENABLED`      | `false` | Tools that initiate action on a payment method with a third party                              |
+| `ADMINISTRATIVE_ENABLED`              | `false` | Tools that create or modify configuration objects (gateways, environments, certificates, etc.) |
 
 Read-only tools (list, show, transcript) are always available regardless of flag settings. Some tools (receivers, access secrets, workflow transactions, redact operations) are always disabled.
 
@@ -93,14 +93,14 @@ Spreedly uses tokens to identify resources. Before reusing any token from a prev
 
 ### How to think about each token type
 
-| Token | What it represents | When to reuse | When NOT to reuse |
-|-------|--------------------|---------------|-------------------|
-| `gateway_token` | A connection to a specific payment processor (e.g. Stripe, Braintree) | The current transaction should be routed to the same processor | The operator wants to use a different processor, or the environment has multiple gateways for different purposes (e.g. one for US, another for EU) |
-| `sca_provider_key` | A 3D Secure authentication provider | The same SCA provider applies to this transaction | A different SCA provider is needed (e.g. different provider for different card networks or regions) |
-| `merchant_profile_token` | A set of merchant business details | The transaction is on behalf of the same merchant | The transaction is on behalf of a different merchant (common when the operator is a payment facilitator) |
-| `sub_merchant_key` | A sub-merchant within a payment facilitator | The transaction is for the same sub-merchant | The transaction is for a different sub-merchant -- each sub-merchant represents a distinct merchant under the payment facilitator |
-| `payment_method_token` | A specific customer's (cardholder's) card or bank account | You are transacting for the **same customer** who owns this payment method | You are transacting for a **different customer** -- using the wrong token means charging the wrong person |
-| `transaction_token` | A specific authorization, purchase, or other transaction | You are performing a follow-up on **that exact transaction** (capture, void, refund) | You are working with a different transaction -- using the wrong token means voiding or refunding the wrong operation |
+| Token                    | What it represents                                                    | When to reuse                                                                        | When NOT to reuse                                                                                                                                  |
+| ------------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `gateway_token`          | A connection to a specific payment processor (e.g. Stripe, Braintree) | The current transaction should be routed to the same processor                       | The operator wants to use a different processor, or the environment has multiple gateways for different purposes (e.g. one for US, another for EU) |
+| `sca_provider_key`       | A 3D Secure authentication provider                                   | The same SCA provider applies to this transaction                                    | A different SCA provider is needed (e.g. different provider for different card networks or regions)                                                |
+| `merchant_profile_token` | A set of merchant business details                                    | The transaction is on behalf of the same merchant                                    | The transaction is on behalf of a different merchant (common when the operator is a payment facilitator)                                           |
+| `sub_merchant_key`       | A sub-merchant within a payment facilitator                           | The transaction is for the same sub-merchant                                         | The transaction is for a different sub-merchant -- each sub-merchant represents a distinct merchant under the payment facilitator                  |
+| `payment_method_token`   | A specific customer's (cardholder's) card or bank account             | You are transacting for the **same customer** who owns this payment method           | You are transacting for a **different customer** -- using the wrong token means charging the wrong person                                          |
+| `transaction_token`      | A specific authorization, purchase, or other transaction              | You are performing a follow-up on **that exact transaction** (capture, void, refund) | You are working with a different transaction -- using the wrong token means voiding or refunding the wrong operation                               |
 
 ### Key principles
 

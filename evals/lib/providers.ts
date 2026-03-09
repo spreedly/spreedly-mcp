@@ -8,9 +8,7 @@ export function createProvider(model?: string): LLMProvider {
   const baseURL = process.env.OPENAI_BASE_URL || DEFAULT_BASE_URL;
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error(
-      "OPENAI_API_KEY is not set. Add it to .env or export it in your shell.",
-    );
+    throw new Error("OPENAI_API_KEY is not set. Add it to .env or export it in your shell.");
   }
   const modelName = model || DEFAULT_MODEL;
 
@@ -41,7 +39,12 @@ export function createProvider(model?: string): LLMProvider {
 
       if (msg.tool_calls && msg.tool_calls.length > 0) {
         result.tool_calls = msg.tool_calls
-          .filter((tc): tc is OpenAI.Chat.Completions.ChatCompletionMessageToolCall & { type: "function" } => tc.type === "function")
+          .filter(
+            (
+              tc,
+            ): tc is OpenAI.Chat.Completions.ChatCompletionMessageToolCall & { type: "function" } =>
+              tc.type === "function",
+          )
           .map((tc) => ({
             id: tc.id,
             type: "function" as const,
@@ -57,9 +60,7 @@ export function createProvider(model?: string): LLMProvider {
   };
 }
 
-function convertMessage(
-  msg: LLMMessage,
-): OpenAI.Chat.Completions.ChatCompletionMessageParam {
+function convertMessage(msg: LLMMessage): OpenAI.Chat.Completions.ChatCompletionMessageParam {
   if (msg.role === "tool") {
     return {
       role: "tool",
@@ -89,9 +90,7 @@ function convertMessage(
   };
 }
 
-function convertTool(
-  tool: LLMToolDef,
-): OpenAI.Chat.Completions.ChatCompletionTool {
+function convertTool(tool: LLMToolDef): OpenAI.Chat.Completions.ChatCompletionTool {
   return {
     type: "function",
     function: {

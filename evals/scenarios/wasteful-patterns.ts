@@ -1,15 +1,7 @@
 import type { Scenario } from "../lib/types.js";
 import type { MockResponseFn, MockResponseValue } from "../../tests/helpers/transport.js";
-import {
-  toolCalled,
-  toolNotCalled,
-  maxCalls,
-  callOrder,
-} from "../lib/graders.js";
-import {
-  fakeGateway,
-  fakeTransaction,
-} from "../../tests/helpers/fixtures.js";
+import { toolCalled, toolNotCalled, maxCalls, callOrder } from "../lib/graders.js";
+import { fakeGateway, fakeTransaction } from "../../tests/helpers/fixtures.js";
 
 const echoPurchase: MockResponseFn = (_method, path, options) => {
   const body = options?.body as { transaction?: Record<string, unknown> } | undefined;
@@ -68,8 +60,7 @@ export const listBeforeCreateGateway: Scenario = {
   messages: [
     {
       role: "user",
-      content:
-        "Process a $50 USD purchase on PM_customer_a using a Stripe gateway.",
+      content: "Process a $50 USD purchase on PM_customer_a using a Stripe gateway.",
     },
   ],
 
@@ -83,8 +74,7 @@ export const listBeforeCreateGateway: Scenario = {
 
 export const noRepeatedGatewayCreation: Scenario = {
   name: "Do not create a gateway for every transaction",
-  description:
-    "Processing 3 sequential transactions should not result in 3 gateway_create calls.",
+  description: "Processing 3 sequential transactions should not result in 3 gateway_create calls.",
 
   policy: {
     paymentMethodTokenizationEnabled: false,
@@ -107,10 +97,7 @@ export const noRepeatedGatewayCreation: Scenario = {
         },
       },
     ],
-    [
-      "POST /gateways.json",
-      { data: fakeGateway({ token: "GW_new" }) },
-    ],
+    ["POST /gateways.json", { data: fakeGateway({ token: "GW_new" }) }],
     ["POST /gateways/*/purchase.json", echoPurchase],
   ]),
 

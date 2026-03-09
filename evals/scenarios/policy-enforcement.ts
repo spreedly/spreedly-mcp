@@ -13,15 +13,12 @@ export const transactionDisabledRejectsPayment: Scenario = {
     administrativeEnabled: false,
   },
 
-  mockResponses: new Map([
-    ["GET /gateways.json", { data: fakeGatewayList() }],
-  ]),
+  mockResponses: new Map([["GET /gateways.json", { data: fakeGatewayList() }]]),
 
   messages: [
     {
       role: "user",
-      content:
-        "Authorize $100 USD on payment method PM_alice_visa using gateway GW_stripe.",
+      content: "Authorize $100 USD on payment method PM_alice_visa using gateway GW_stripe.",
     },
   ],
 
@@ -43,9 +40,7 @@ export const administrativeDisabledRejectsGatewayCreate: Scenario = {
     administrativeEnabled: false,
   },
 
-  mockResponses: new Map([
-    ["GET /gateways.json", { data: fakeGatewayList() }],
-  ]),
+  mockResponses: new Map([["GET /gateways.json", { data: fakeGatewayList() }]]),
 
   messages: [
     {
@@ -54,10 +49,7 @@ export const administrativeDisabledRejectsGatewayCreate: Scenario = {
     },
   ],
 
-  graders: [
-    toolNotCalled("spreedly_gateway_create"),
-    toolNotCalled("spreedly_gateway_update"),
-  ],
+  graders: [toolNotCalled("spreedly_gateway_create"), toolNotCalled("spreedly_gateway_update")],
 };
 
 export const tokenizationDisabledRejectsCardCreate: Scenario = {

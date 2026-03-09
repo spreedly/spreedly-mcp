@@ -75,11 +75,11 @@ For details, see [Spreedly Credentials Documentation](https://docs.spreedly.com/
 
 The server controls which tools are available through three environment variable flags. **All default to `false`** -- only read-only tools are available out of the box. Enable the categories you need:
 
-| Variable | Default | What it enables |
-|----------|---------|-----------------|
-| `PAYMENT_METHOD_TOKENIZATION_ENABLED` | `false` | Creating and recaching payment methods (sends PAN/CVV data) |
-| `TRANSACTION_INITIATION_ENABLED` | `false` | Authorizing, purchasing, capturing, voiding, refunding, and other third-party actions |
-| `ADMINISTRATIVE_ENABLED` | `false` | Creating/updating gateways, environments, certificates, merchant profiles, SCA providers, sub-merchants |
+| Variable                              | Default | What it enables                                                                                         |
+| ------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------- |
+| `PAYMENT_METHOD_TOKENIZATION_ENABLED` | `false` | Creating and recaching payment methods (sends PAN/CVV data)                                             |
+| `TRANSACTION_INITIATION_ENABLED`      | `false` | Authorizing, purchasing, capturing, voiding, refunding, and other third-party actions                   |
+| `ADMINISTRATIVE_ENABLED`              | `false` | Creating/updating gateways, environments, certificates, merchant profiles, SCA providers, sub-merchants |
 
 ### Recommended Configuration Profiles
 

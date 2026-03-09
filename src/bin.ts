@@ -29,9 +29,7 @@ async function main() {
 
   const policy = readPolicyFromEnv();
   const enabledCategories = getEnabledCategories(policy);
-  console.error(
-    `Spreedly MCP: Tool policy — enabled categories: ${enabledCategories.join(", ")}`,
-  );
+  console.error(`Spreedly MCP: Tool policy — enabled categories: ${enabledCategories.join(", ")}`);
 
   const transport = createTransport(environmentKey, accessSecret);
   const server = createServer(transport, policy, { environmentKey });
