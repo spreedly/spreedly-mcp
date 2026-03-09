@@ -18,8 +18,13 @@ describe("event tools", () => {
   });
 
   it("shows an event", async () => {
-    const { transport } = createMockTransport(new Map([["GET /events/123.json", { data: fakeEvent() }]]));
-    const result = await findTool("spreedly_event_show").handler({ event_id: "123" }, { transport });
+    const { transport } = createMockTransport(
+      new Map([["GET /events/123.json", { data: fakeEvent() }]]),
+    );
+    const result = await findTool("spreedly_event_show").handler(
+      { event_id: "123" },
+      { transport },
+    );
     expect(result).toEqual(fakeEvent());
   });
 

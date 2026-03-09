@@ -51,7 +51,8 @@ export function fakeTransactionList() {
   return {
     transactions: [
       fakeTransaction().transaction,
-      fakeTransaction({ token: "FakeTxToken_abc456", transaction_type: "Authorization" }).transaction,
+      fakeTransaction({ token: "FakeTxToken_abc456", transaction_type: "Authorization" })
+        .transaction,
     ],
   };
 }

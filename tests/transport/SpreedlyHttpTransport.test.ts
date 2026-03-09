@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createTransport } from "../../src/transport/SpreedlyHttpTransport.js";
-import { SpreedlyAuthError, SpreedlyNotFoundError, SpreedlyValidationError, SpreedlyError } from "../../src/transport/errors.js";
+import {
+  SpreedlyAuthError,
+  SpreedlyNotFoundError,
+  SpreedlyValidationError,
+  SpreedlyError,
+} from "../../src/transport/errors.js";
 import { FAKE_ENV_KEY, FAKE_ACCESS_SECRET } from "../helpers/fixtures.js";
 
 describe("SpreedlyHttpTransport", () => {
@@ -173,7 +178,9 @@ describe("SpreedlyHttpTransport", () => {
       expect.fail("Should have thrown");
     } catch (err) {
       expect(err).toBeInstanceOf(SpreedlyValidationError);
-      expect((err as SpreedlyValidationError).fieldErrors).toEqual({ amount: ["must be positive"] });
+      expect((err as SpreedlyValidationError).fieldErrors).toEqual({
+        amount: ["must be positive"],
+      });
     }
   });
 

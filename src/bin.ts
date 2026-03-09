@@ -27,13 +27,16 @@ async function main() {
   }
 
   const transport = createTransport(environmentKey, accessSecret);
-  const server = createServer(transport);
+  const server = createServer(transport, { environmentKey });
 
   const stdioTransport = new StdioServerTransport();
   await server.connect(stdioTransport);
 }
 
 main().catch((error) => {
-  console.error("Spreedly MCP: Fatal startup error:", error instanceof Error ? error.message : error);
+  console.error(
+    "Spreedly MCP: Fatal startup error:",
+    error instanceof Error ? error.message : error,
+  );
   process.exit(1);
 });

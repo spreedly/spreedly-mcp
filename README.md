@@ -75,56 +75,56 @@ For details, see [Spreedly Credentials Documentation](https://docs.spreedly.com/
 
 ### Gateways (13 tools)
 
-| Tool | Description |
-|------|-------------|
-| `spreedly_gateway_create` | Create a new gateway connection |
-| `spreedly_gateway_list` | List all gateways |
-| `spreedly_gateway_show` | Get gateway details |
-| `spreedly_gateway_update` | Update gateway configuration |
-| `spreedly_gateway_redact` | Permanently remove gateway credentials |
-| `spreedly_gateway_retain` | Mark gateway for retention |
-| `spreedly_gateway_list_supported` | List all supported gateway types |
-| `spreedly_gateway_list_transactions` | List transactions for a gateway |
-| `spreedly_gateway_authorize` | Authorize a payment (hold funds) |
-| `spreedly_gateway_purchase` | Authorize and capture in one step |
-| `spreedly_gateway_verify` | Verify a payment method |
-| `spreedly_gateway_store` | Store a payment method at a gateway |
-| `spreedly_gateway_general_credit` | Issue a non-referenced credit |
+| Tool                                 | Description                            |
+| ------------------------------------ | -------------------------------------- |
+| `spreedly_gateway_create`            | Create a new gateway connection        |
+| `spreedly_gateway_list`              | List all gateways                      |
+| `spreedly_gateway_show`              | Get gateway details                    |
+| `spreedly_gateway_update`            | Update gateway configuration           |
+| `spreedly_gateway_redact`            | Permanently remove gateway credentials |
+| `spreedly_gateway_retain`            | Mark gateway for retention             |
+| `spreedly_gateway_list_supported`    | List all supported gateway types       |
+| `spreedly_gateway_list_transactions` | List transactions for a gateway        |
+| `spreedly_gateway_authorize`         | Authorize a payment (hold funds)       |
+| `spreedly_gateway_purchase`          | Authorize and capture in one step      |
+| `spreedly_gateway_verify`            | Verify a payment method                |
+| `spreedly_gateway_store`             | Store a payment method at a gateway    |
+| `spreedly_gateway_general_credit`    | Issue a non-referenced credit          |
 
 ### Transactions (12 tools)
 
-| Tool | Description |
-|------|-------------|
-| `spreedly_transaction_list` | List transactions |
-| `spreedly_transaction_show` | Get transaction details |
-| `spreedly_transaction_update` | Update transaction metadata |
-| `spreedly_transaction_capture` | Capture an authorized transaction |
-| `spreedly_transaction_void` | Void a transaction |
-| `spreedly_transaction_credit` | Refund a transaction |
-| `spreedly_transaction_complete` | Complete a pending transaction |
-| `spreedly_transaction_confirm` | Confirm a pending transaction |
-| `spreedly_transaction_transcript` | Get raw gateway transcript |
-| `spreedly_transaction_authorize_workflow` | Authorize via workflows |
-| `spreedly_transaction_purchase_workflow` | Purchase via workflows |
-| `spreedly_transaction_verify_workflow` | Verify via workflows |
+| Tool                                      | Description                       |
+| ----------------------------------------- | --------------------------------- |
+| `spreedly_transaction_list`               | List transactions                 |
+| `spreedly_transaction_show`               | Get transaction details           |
+| `spreedly_transaction_update`             | Update transaction metadata       |
+| `spreedly_transaction_capture`            | Capture an authorized transaction |
+| `spreedly_transaction_void`               | Void a transaction                |
+| `spreedly_transaction_credit`             | Refund a transaction              |
+| `spreedly_transaction_complete`           | Complete a pending transaction    |
+| `spreedly_transaction_confirm`            | Confirm a pending transaction     |
+| `spreedly_transaction_transcript`         | Get raw gateway transcript        |
+| `spreedly_transaction_authorize_workflow` | Authorize via workflows           |
+| `spreedly_transaction_purchase_workflow`  | Purchase via workflows            |
+| `spreedly_transaction_verify_workflow`    | Verify via workflows              |
 
 ### Payment Methods (13 tools)
 
-| Tool | Description |
-|------|-------------|
-| `spreedly_payment_method_create` | Tokenize a new payment method |
-| `spreedly_payment_method_list` | List payment methods |
-| `spreedly_payment_method_show` | Get payment method details |
-| `spreedly_payment_method_update` | Update payment method metadata |
-| `spreedly_payment_method_retain` | Retain a payment method |
-| `spreedly_payment_method_redact` | Redact a payment method |
-| `spreedly_payment_method_recache` | Recache CVV |
+| Tool                                        | Description                            |
+| ------------------------------------------- | -------------------------------------- |
+| `spreedly_payment_method_create`            | Tokenize a new payment method          |
+| `spreedly_payment_method_list`              | List payment methods                   |
+| `spreedly_payment_method_show`              | Get payment method details             |
+| `spreedly_payment_method_update`            | Update payment method metadata         |
+| `spreedly_payment_method_retain`            | Retain a payment method                |
+| `spreedly_payment_method_redact`            | Redact a payment method                |
+| `spreedly_payment_method_recache`           | Recache CVV                            |
 | `spreedly_payment_method_list_transactions` | List transactions for a payment method |
-| `spreedly_payment_method_list_events` | List events for a payment method |
-| `spreedly_payment_method_delete_metadata` | Delete payment method metadata |
-| `spreedly_payment_method_update_gratis` | Update without gateway interaction |
-| `spreedly_payment_method_show_event` | Show a payment method event |
-| `spreedly_payment_method_list_all_events` | List all payment method events |
+| `spreedly_payment_method_list_events`       | List events for a payment method       |
+| `spreedly_payment_method_delete_metadata`   | Delete payment method metadata         |
+| `spreedly_payment_method_update_gratis`     | Update without gateway interaction     |
+| `spreedly_payment_method_show_event`        | Show a payment method event            |
+| `spreedly_payment_method_list_all_events`   | List all payment method events         |
 
 ### Receivers (8 tools)
 
@@ -184,12 +184,45 @@ For details, see [Spreedly Credentials Documentation](https://docs.spreedly.com/
 1. Find the transaction: `spreedly_transaction_show`
 2. Issue a refund: `spreedly_transaction_credit`
 
+## Audit Logging
+
+When audit logging is enabled (the default), the MCP server emits structured audit log entries to **stderr** for every tool invocation. Logs use one-line JSON format for easy SIEM ingestion and comply with PCI DSS v4.0.1 Requirement 10.2.2. stderr is the [MCP-specified channel for logging](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#stdio) — stdout is reserved for protocol traffic and must not contain non-MCP messages.
+
+### Example Output
+
+```json
+{"timestamp":"2026-03-05T18:30:00.000Z","eventId":"f47ac10b-58cc-4372-a567-0e02b2c3d479","component":"spreedly-mcp","tool":"spreedly_gateway_list","environmentKey":"Abc123XyzLongKey","status":"success","durationMs":142,"requestId":"a1b2c3d4e5","httpStatusCode":200}
+{"timestamp":"2026-03-05T18:30:01.000Z","eventId":"7c9e6679-7425-40de-944b-e07fc1f90ae7","component":"spreedly-mcp","tool":"spreedly_payment_method_create","environmentKey":"Abc123XyzLongKey","status":"error","durationMs":89,"requestId":"f6g7h8i9j0","errorCode":"VALIDATION_ERROR","httpStatusCode":422}
+```
+
+Each entry includes: timestamp, event ID, component identifier, tool name, environment key, success/failure status, duration, HTTP metadata, and error details when applicable. The `environmentKey` is the full `SPREEDLY_ENVIRONMENT_KEY` (safe to log — it is not a secret). The `requestId` and `httpStatusCode` fields reflect the Spreedly API response (`x-request-id` header and HTTP status), enabling correlation with Spreedly's server-side logs. Both are present whenever a Spreedly API call was made, and absent when no HTTP request occurred (e.g. input validation failure). Request and response bodies are **never** logged.
+
+### De-duplicating Logs
+
+The server emits exactly **one** audit entry per tool invocation. However, MCP hosts (Claude Desktop, Cursor, VS Code, etc.) capture and display stderr independently from one another, and some hosts may render the same stderr line more than once in their log UI. Each entry includes a unique `eventId` (UUIDv4) so that downstream log pipelines can safely de-duplicate: discard any entry whose `eventId` you have already seen.
+
+### Configuration
+
+| Environment Variable     | Values           | Default | Description                                                                                                                                                                                                                                         |
+| ------------------------ | ---------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SPREEDLY_MCP_LOG_LEVEL` | `info`, `silent` | `info`  | Set to `silent` to disable audit logging. **Note:** Disabling audit logs means this component will not satisfy PCI DSS Requirement 10.2.1 (audit logs enabled for all system components). Use `silent` only in development or non-PCI environments. |
+
+### Shared Responsibility
+
+| Responsibility                                              | Owner                   |
+| ----------------------------------------------------------- | ----------------------- |
+| Emit structured audit events to stderr                      | Spreedly MCP server     |
+| Capture stderr and route to SIEM/log aggregator             | Customer infrastructure |
+| Retain logs for 12+ months (3 months immediately available) | Customer infrastructure |
+| Monitor and alert on suspicious audit events                | Customer infrastructure |
+
 ## Security
 
 - Credentials are isolated in a closure -- never stored as object properties, never serializable
 - All inputs are sanitized for invisible Unicode characters and injection attempts
 - Error messages are redacted to prevent credential leakage
 - Tool descriptions are static constants hardened against prompt injection
+- Audit logs never contain request/response bodies, full keys, or secrets
 - See [SECURITY.md](SECURITY.md) for the full security policy
 
 ## Development
