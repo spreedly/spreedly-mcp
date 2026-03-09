@@ -35,12 +35,6 @@ export const UpdateGatewaySchema = z
   })
   .strict();
 
-export const RedactGatewaySchema = z
-  .object({
-    gateway_token: z.string().describe("The token of the gateway to redact"),
-  })
-  .strict();
-
 export const RetainGatewaySchema = z
   .object({
     gateway_token: z.string().describe("The token of the gateway to retain"),

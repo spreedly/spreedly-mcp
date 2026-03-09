@@ -85,19 +85,6 @@ export function fakePaymentMethodList() {
   };
 }
 
-export function fakeReceiver(overrides: Record<string, unknown> = {}) {
-  return {
-    receiver: {
-      token: "FakeRXToken_rx001",
-      receiver_type: "test",
-      state: "retained",
-      created_at: "2025-01-01T00:00:00Z",
-      updated_at: "2025-01-01T00:00:00Z",
-      ...overrides,
-    },
-  };
-}
-
 export function fakeCertificate(overrides: Record<string, unknown> = {}) {
   return {
     certificate: {
@@ -149,16 +136,6 @@ export function fakeEvent(overrides: Record<string, unknown> = {}) {
     event: {
       token: "FakeEventToken_ev001",
       event_type: "transaction.succeeded",
-      created_at: "2025-01-01T00:00:00Z",
-      ...overrides,
-    },
-  };
-}
-
-export function fakeAccessSecret(overrides: Record<string, unknown> = {}) {
-  return {
-    access_secret: {
-      token: "FakeASToken_as001",
       created_at: "2025-01-01T00:00:00Z",
       ...overrides,
     },

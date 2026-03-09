@@ -36,12 +36,6 @@ npm run test:evals -- --scenario wasteful-patterns
 # Use a different model
 npm run test:evals -- --model gpt-4o
 
-# Run against all models (gpt-5-nano, gpt-5-mini, gpt-5)
-npm run test:evals -- --matrix
-
-# Combine matrix with a scenario filter
-npm run test:evals -- --matrix --scenario token-reuse
-
 # Show help
 npm run test:evals -- --help
 ```
@@ -118,6 +112,7 @@ Then add it to the appropriate array in the scenario file, and re-export from `e
 | `argumentDiffersAcrossCalls(name, arg)` | Argument differs across calls to tool            |
 | `callOrder(first, second)`              | First tool was called before second tool         |
 | `maxCalls(name, max)`                   | Tool was called at most N times                  |
+| `pausedForInput()`                      | Model's last turn was text, not tool calls       |
 
 ## Using a different LLM provider
 
@@ -126,6 +121,14 @@ By default, evals use OpenAI (`https://api.openai.com/v1`). To use any OpenAI-co
 ```bash
 OPENAI_BASE_URL=http://localhost:11434/v1 OPENAI_API_KEY=ollama npm run test:evals -- --model qwen2.5:32b
 ```
+
+## Mock data only
+
+Eval output includes the full arguments of every tool call the model makes. This is intentional — it lets you verify exactly which tokens, amounts, and parameters the model chose.
+
+Because arguments are logged in full, **evals must only use synthetic/mock data**. Never use real Spreedly credentials, real card numbers, or real gateway API keys in scenario definitions or mock responses. All tokens (e.g. `GW_stripe_us`, `PM_alice_visa`, `TXN_auth_001`) should be obviously fake identifiers that carry no real-world meaning.
+
+The eval runner enforces this by design: scenarios define their own `mockResponses` and never contact the Spreedly API.
 
 ## Interpreting results
 

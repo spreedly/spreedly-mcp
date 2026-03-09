@@ -78,12 +78,6 @@ export const RetainPaymentMethodSchema = z
   })
   .strict();
 
-export const RedactPaymentMethodSchema = z
-  .object({
-    payment_method_token: z.string().describe("The token of the payment method to redact"),
-  })
-  .strict();
-
 export const RecachePaymentMethodSchema = z
   .object({
     payment_method_token: z.string().describe("The token of the payment method"),

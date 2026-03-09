@@ -9,6 +9,7 @@ import type {
   Scenario,
   ToolCallRecord,
   ScenarioResult,
+  EvalGroupResult,
   EvalResult,
   LLMProvider,
   LLMMessage,
@@ -92,10 +93,12 @@ function executeToolCall(
 export async function runScenario(
   scenario: Scenario,
   provider: LLMProvider,
+  group: string,
 ): Promise<ScenarioResult> {
   const { llmTools, enabledToolNames } = toolsToLLMFormat(scenario.policy);
   const systemPrompt = loadSystemPrompt();
   const toolCalls: ToolCallRecord[] = [];
+  let finalResponse: string | undefined;
 
   const messages: LLMMessage[] = [
     { role: "system", content: systemPrompt },
@@ -111,6 +114,7 @@ export async function runScenario(
     messages.push(response);
 
     if (!response.tool_calls || response.tool_calls.length === 0) {
+      finalResponse = response.content || undefined;
       break;
     }
 
@@ -150,49 +154,68 @@ export async function runScenario(
     }
   }
 
-  const grades = scenario.graders.map((grader) => grader(toolCalls));
+  const grades = scenario.graders.map((grader) => grader(toolCalls, messages));
   const passed = grades.every((g) => g.pass);
 
   return {
     scenario: scenario.name,
+    group,
     grades,
     passed,
     toolCalls,
+    finalResponse,
   };
 }
 
 export async function runAllScenarios(
-  scenarios: Scenario[],
+  groups: Record<string, Scenario[]>,
   provider: LLMProvider,
   model: string,
 ): Promise<EvalResult> {
-  const results: ScenarioResult[] = [];
+  const totalScenarios = Object.values(groups).reduce((n, s) => n + s.length, 0);
+  console.error(`  Running ${totalScenarios} scenarios concurrently...\n`);
 
-  for (const scenario of scenarios) {
-    console.error(`  Running: ${scenario.name}...`);
-    try {
-      const result = await runScenario(scenario, provider);
-      results.push(result);
-      const status = result.passed ? "PASS" : "FAIL";
-      console.error(`  ${status}: ${scenario.name}`);
-      for (const grade of result.grades) {
-        const icon = grade.pass ? "  +" : "  -";
-        console.error(`    ${icon} ${grade.reason}`);
+  const groupEntries = Object.entries(groups);
+
+  const allPromises = groupEntries.flatMap(([groupName, scenarios]) =>
+    scenarios.map(async (scenario): Promise<ScenarioResult> => {
+      try {
+        const result = await runScenario(scenario, provider, groupName);
+        const status = result.passed ? "PASS" : "FAIL";
+        console.error(`  ${status}: ${scenario.name}`);
+        for (const grade of result.grades) {
+          const icon = grade.pass ? "  +" : "  -";
+          console.error(`    ${icon} ${grade.reason}`);
+        }
+        return result;
+      } catch (err) {
+        console.error(`  ERROR: ${scenario.name}: ${err}`);
+        return {
+          scenario: scenario.name,
+          group: groupName,
+          grades: [{ pass: false, reason: `Runner error: ${err}` }],
+          passed: false,
+          toolCalls: [],
+        };
       }
-    } catch (err) {
-      console.error(`  ERROR: ${scenario.name}: ${err}`);
-      results.push({
-        scenario: scenario.name,
-        grades: [{ pass: false, reason: `Runner error: ${err}` }],
-        passed: false,
-        toolCalls: [],
-      });
-    }
-  }
+    }),
+  );
+
+  const results = await Promise.all(allPromises);
+
+  const evalGroups: EvalGroupResult[] = groupEntries.map(([groupName]) => {
+    const groupResults = results.filter((r) => r.group === groupName);
+    return {
+      group: groupName,
+      scenarios: groupResults,
+      totalPassed: groupResults.filter((r) => r.passed).length,
+      totalFailed: groupResults.filter((r) => !r.passed).length,
+    };
+  });
 
   return {
     model,
-    scenarios: results,
+    groups: evalGroups,
     totalPassed: results.filter((r) => r.passed).length,
     totalFailed: results.filter((r) => !r.passed).length,
   };

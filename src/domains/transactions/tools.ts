@@ -10,9 +10,6 @@ import {
   CompleteTransactionSchema,
   ConfirmTransactionSchema,
   TranscriptTransactionSchema,
-  AuthorizeWorkflowSchema,
-  PurchaseWorkflowSchema,
-  VerifyWorkflowSchema,
 } from "./schemas.js";
 
 function buildQuery(params: Record<string, string | undefined>): string {
@@ -146,36 +143,6 @@ export const transactionTools: ToolDefinition[] = [
     handler: async (params, { transport }) => {
       const { transaction_token } = params as { transaction_token: string };
       const res = await transport.request("GET", `/transactions/${transaction_token}/transcript`);
-      return res.data;
-    },
-  },
-  {
-    name: "spreedly_transaction_authorize_workflow",
-    description: TOOL_DESCRIPTIONS.spreedly_transaction_authorize_workflow,
-    schema: AuthorizeWorkflowSchema.shape,
-    handler: async (params, { transport }) => {
-      const body = { transaction: params };
-      const res = await transport.request("POST", "/transactions/authorize.json", { body });
-      return res.data;
-    },
-  },
-  {
-    name: "spreedly_transaction_purchase_workflow",
-    description: TOOL_DESCRIPTIONS.spreedly_transaction_purchase_workflow,
-    schema: PurchaseWorkflowSchema.shape,
-    handler: async (params, { transport }) => {
-      const body = { transaction: params };
-      const res = await transport.request("POST", "/transactions/purchase.json", { body });
-      return res.data;
-    },
-  },
-  {
-    name: "spreedly_transaction_verify_workflow",
-    description: TOOL_DESCRIPTIONS.spreedly_transaction_verify_workflow,
-    schema: VerifyWorkflowSchema.shape,
-    handler: async (params, { transport }) => {
-      const body = { transaction: params };
-      const res = await transport.request("POST", "/transactions/verify.json", { body });
       return res.data;
     },
   },

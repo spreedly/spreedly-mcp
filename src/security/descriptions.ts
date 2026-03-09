@@ -8,8 +8,6 @@ export const TOOL_DESCRIPTIONS = Object.freeze({
     "Retrieves details of a single gateway by its token. Returns the full gateway configuration. This tool ONLY reads data and does not modify anything.",
   spreedly_gateway_update:
     "Updates an existing gateway's configuration. Requires a gateway_token and fields to update. Returns the updated gateway. This tool ONLY modifies the specified gateway.",
-  spreedly_gateway_redact:
-    "Permanently removes sensitive credential data from a gateway while preserving the record. This is irreversible. This tool ONLY affects the specified gateway.",
   spreedly_gateway_retain:
     "Marks a gateway to be retained beyond the default retention period. Returns the updated gateway. This tool ONLY modifies retention status.",
   spreedly_gateway_list_supported:
@@ -45,13 +43,6 @@ export const TOOL_DESCRIPTIONS = Object.freeze({
   spreedly_transaction_confirm: "Confirms a pending transaction. Requires a transaction_token.",
   spreedly_transaction_transcript:
     "Retrieves the raw gateway communication transcript for a transaction. Returns request/response logs. This tool ONLY reads data.",
-  spreedly_transaction_authorize_workflow:
-    "Creates an authorization using Spreedly workflows (route-agnostic). Returns the transaction result.",
-  spreedly_transaction_purchase_workflow:
-    "Creates a purchase using Spreedly workflows (route-agnostic). Returns the transaction result.",
-  spreedly_transaction_verify_workflow:
-    "Verifies a payment method using Spreedly workflows (route-agnostic). Returns the verification result.",
-
   // Payment Methods
   spreedly_payment_method_create:
     "Creates/tokenizes a new payment method in Spreedly. Returns the payment method token and details. This tool ONLY tokenizes, it does not charge.",
@@ -63,8 +54,6 @@ export const TOOL_DESCRIPTIONS = Object.freeze({
     "Updates a payment method's non-sensitive fields. Requires a payment_method_token. This tool ONLY updates metadata.",
   spreedly_payment_method_retain:
     "Marks a payment method to be retained beyond the default retention period. This tool ONLY modifies retention status.",
-  spreedly_payment_method_redact:
-    "Permanently removes sensitive data from a payment method. This is irreversible.",
   spreedly_payment_method_recache:
     "Recaches the CVV for a previously stored payment method. Requires the CVV to be provided again.",
   spreedly_payment_method_list_transactions:
@@ -79,24 +68,6 @@ export const TOOL_DESCRIPTIONS = Object.freeze({
     "Retrieves a specific payment method event by token. This tool ONLY reads data.",
   spreedly_payment_method_list_all_events:
     "Lists all payment method events across your environment. This tool ONLY reads data.",
-
-  // Receivers
-  spreedly_receiver_list_supported:
-    "Lists all receiver types supported by Spreedly. Returns available receiver integrations. This tool ONLY reads reference data.",
-  spreedly_receiver_create:
-    "Creates a new payment receiver in Spreedly. Returns the receiver configuration. This tool ONLY creates receivers.",
-  spreedly_receiver_list:
-    "Lists all receivers in your Spreedly environment. This tool ONLY reads data.",
-  spreedly_receiver_show:
-    "Retrieves details of a single receiver by its token. This tool ONLY reads data.",
-  spreedly_receiver_update:
-    "Updates an existing receiver's configuration. This tool ONLY modifies the specified receiver.",
-  spreedly_receiver_redact:
-    "Permanently removes sensitive data from a receiver. This is irreversible.",
-  spreedly_receiver_deliver:
-    "Delivers a payment method to a receiver endpoint. This tool transmits payment data to the receiver.",
-  spreedly_receiver_export:
-    "Exports payment methods to a receiver. This tool transmits payment data to the receiver.",
 
   // Certificates
   spreedly_certificate_create:
@@ -117,17 +88,6 @@ export const TOOL_DESCRIPTIONS = Object.freeze({
     "Retrieves details of a single environment by its key. This tool ONLY reads data.",
   spreedly_environment_update:
     "Updates an existing environment's configuration. This tool ONLY modifies the specified environment.",
-  spreedly_environment_create_access_secret:
-    "Creates a new access secret for an environment. Returns the secret (shown only once). This tool creates credentials.",
-  spreedly_environment_list_access_secrets:
-    "Lists access secrets for an environment. Secret values are not returned. This tool ONLY reads data.",
-  spreedly_environment_show_access_secret:
-    "Retrieves details of a specific access secret. The secret value is not returned. This tool ONLY reads data.",
-  spreedly_environment_delete_access_secret:
-    "Deletes an access secret from an environment. This is irreversible.",
-  spreedly_environment_regenerate_signing_secret:
-    "Regenerates the signing secret for an environment. The old secret becomes invalid immediately.",
-
   // Merchant Profiles
   spreedly_merchant_profile_create:
     "Creates a new merchant profile. Returns the profile configuration. This tool ONLY creates profiles.",

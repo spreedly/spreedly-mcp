@@ -2,6 +2,7 @@ import type { Scenario } from "../lib/types.js";
 import type { MockResponseFn, MockResponseValue } from "../../tests/helpers/transport.js";
 import {
   toolCalled,
+  toolCalledWith,
   toolNotCalled,
   argumentDiffersAcrossCalls,
   argumentSameAcrossCalls,
@@ -181,6 +182,7 @@ export const authorizeThenCapture: Scenario = {
   graders: [
     toolCalled("spreedly_gateway_authorize", { times: 1 }),
     toolCalled("spreedly_transaction_capture", { times: 1 }),
+    toolCalledWith("spreedly_transaction_capture", { transaction_token: "TXN_auth_001" }),
     callOrder("spreedly_gateway_authorize", "spreedly_transaction_capture"),
     toolNotCalled("spreedly_gateway_create"),
   ],

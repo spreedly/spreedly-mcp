@@ -1,19 +1,16 @@
 import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
-import { allScenarios, scenarioGroups } from "./scenarios/index.js";
+import { scenarioGroups } from "./scenarios/index.js";
 import { createProvider } from "./lib/providers.js";
 import { runAllScenarios } from "./lib/runner.js";
-import type { EvalResult } from "./lib/types.js";
+import type { EvalResult, Scenario } from "./lib/types.js";
 
 loadDotenv();
-
-const MATRIX_MODELS = ["gpt-5-nano", "gpt-5-mini", "gpt-5"];
 
 const { values } = parseArgs({
   options: {
     scenario: { type: "string", short: "s" },
     model: { type: "string", short: "m" },
-    matrix: { type: "boolean" },
     help: { type: "boolean", short: "h" },
   },
   strict: true,
@@ -26,14 +23,12 @@ Usage: npm run test:evals [-- options]
 Options:
   -s, --scenario <name>   Run a specific scenario group (token-reuse, policy-enforcement, wasteful-patterns)
   -m, --model <model>     Model name (default: gpt-5-nano)
-  --matrix                Run against all models: ${MATRIX_MODELS.join(", ")}
   -h, --help              Show this help message
 
 Examples:
   npm run test:evals                              # Run all evals with default model
   npm run test:evals -- --scenario token-reuse    # Run only token-reuse scenarios
   npm run test:evals -- --model gpt-4o            # Use a different model
-  npm run test:evals -- --matrix                  # Run against nano, mini, and gpt-5
 
 Environment variables:
   OPENAI_BASE_URL   Override LLM endpoint (default: https://api.openai.com/v1)
@@ -44,10 +39,10 @@ Environment variables:
   process.exit(0);
 }
 
-const models = values.matrix ? MATRIX_MODELS : [values.model || "gpt-5-nano"];
+const model = values.model || "gpt-5-nano";
 const scenarioFilter = values.scenario;
 
-let scenarios = allScenarios;
+let groups: Record<string, Scenario[]>;
 if (scenarioFilter) {
   const group = scenarioGroups[scenarioFilter];
   if (!group) {
@@ -56,29 +51,22 @@ if (scenarioFilter) {
     );
     process.exit(1);
   }
-  scenarios = group;
-}
-
-const allResults: EvalResult[] = [];
-
-for (const model of models) {
-  console.error(`\nSpreedly MCP Behavioral Evals`);
-  console.error(`Model: ${model}`);
-  console.error(`Scenarios: ${scenarios.length}\n`);
-
-  const provider = createProvider(model);
-  const result = await runAllScenarios(scenarios, provider, model);
-  allResults.push(result);
-}
-
-if (allResults.length === 1) {
-  console.log("\n" + formatResults(allResults[0]));
+  groups = { [scenarioFilter]: group };
 } else {
-  console.log("\n" + formatMatrix(allResults));
+  groups = scenarioGroups;
 }
 
-const failed = allResults.some((r) => r.totalFailed > 0);
-process.exit(failed ? 1 : 0);
+const totalScenarios = Object.values(groups).reduce((n, s) => n + s.length, 0);
+console.error(`\nSpreedly MCP Behavioral Evals`);
+console.error(`Model: ${model}`);
+console.error(`Scenarios: ${totalScenarios}\n`);
+
+const provider = createProvider(model);
+const result = await runAllScenarios(groups, provider, model);
+
+console.log("\n" + formatResults(result));
+
+process.exit(result.totalFailed > 0 ? 1 : 0);
 
 function formatResults(result: EvalResult): string {
   const lines: string[] = [];
@@ -86,15 +74,34 @@ function formatResults(result: EvalResult): string {
   lines.push(`EVAL RESULTS -- Model: ${result.model}`);
   lines.push("=".repeat(60));
 
-  for (const sr of result.scenarios) {
-    const status = sr.passed ? "PASS" : "FAIL";
-    lines.push(`\n[${status}] ${sr.scenario}`);
-    for (const grade of sr.grades) {
-      const icon = grade.pass ? "  + " : "  - ";
-      lines.push(`${icon}${grade.reason}`);
-    }
-    if (sr.toolCalls.length > 0) {
-      lines.push(`  Tool calls: ${sr.toolCalls.map((tc) => tc.tool).join(" -> ")}`);
+  for (const group of result.groups) {
+    const groupStatus =
+      group.totalFailed === 0
+        ? `${group.totalPassed}/${group.totalPassed}`
+        : `${group.totalPassed}/${group.totalPassed + group.totalFailed}`;
+    lines.push(`\n--- ${group.group} (${groupStatus}) ---`);
+
+    for (const sr of group.scenarios) {
+      const status = sr.passed ? "PASS" : "FAIL";
+      lines.push(`\n  [${status}] ${sr.scenario}`);
+      for (const grade of sr.grades) {
+        const icon = grade.pass ? "    + " : "    - ";
+        lines.push(`${icon}${grade.reason}`);
+      }
+      if (sr.toolCalls.length > 0) {
+        lines.push("    Tool calls:");
+        for (const [i, tc] of sr.toolCalls.entries()) {
+          const args =
+            Object.keys(tc.arguments).length > 0 ? `(${JSON.stringify(tc.arguments)})` : "()";
+          lines.push(`      ${i + 1}. ${tc.tool}${args}`);
+        }
+      }
+      if (!sr.passed && sr.finalResponse) {
+        lines.push("    Model's final response:");
+        for (const line of sr.finalResponse.split("\n")) {
+          lines.push(`      ${line}`);
+        }
+      }
     }
   }
 
@@ -103,49 +110,6 @@ function formatResults(result: EvalResult): string {
     `Total: ${result.totalPassed + result.totalFailed} | Passed: ${result.totalPassed} | Failed: ${result.totalFailed}`,
   );
   lines.push("-".repeat(60));
-
-  return lines.join("\n");
-}
-
-function formatMatrix(results: EvalResult[]): string {
-  const lines: string[] = [];
-
-  const scenarioNames = results[0].scenarios.map((s) => s.scenario);
-  const modelNames = results.map((r) => r.model);
-
-  lines.push("=".repeat(60));
-  lines.push("EVAL MATRIX RESULTS");
-  lines.push("=".repeat(60));
-
-  const modelColWidth = Math.max(...modelNames.map((m) => m.length), 5);
-  const header =
-    "Scenario".padEnd(55) + modelNames.map((m) => m.padStart(modelColWidth + 2)).join("");
-  lines.push("\n" + header);
-  lines.push("-".repeat(header.length));
-
-  for (const name of scenarioNames) {
-    const cells = results.map((r) => {
-      const sr = r.scenarios.find((s) => s.scenario === name);
-      return sr?.passed ? "PASS" : "FAIL";
-    });
-    const row =
-      name.slice(0, 53).padEnd(55) + cells.map((c) => c.padStart(modelColWidth + 2)).join("");
-    lines.push(row);
-  }
-
-  lines.push("-".repeat(header.length));
-
-  const totals = results.map((r) => `${r.totalPassed}/${r.totalPassed + r.totalFailed}`);
-  const totalRow =
-    "Total passed".padEnd(55) + totals.map((t) => t.padStart(modelColWidth + 2)).join("");
-  lines.push(totalRow);
-
-  lines.push("\n");
-
-  for (const result of results) {
-    lines.push(formatResults(result));
-    lines.push("");
-  }
 
   return lines.join("\n");
 }

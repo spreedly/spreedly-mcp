@@ -28,7 +28,7 @@ These are set in the MCP client configuration, not passed as tool parameters. If
 
 All tools follow the pattern: `spreedly_<domain>_<action>`
 
-Domains: `gateway`, `transaction`, `payment_method`, `receiver`, `certificate`, `environment`, `merchant_profile`, `sub_merchant`, `event`, `protection`, `sca`, `card_refresher`, `network_tokenization`
+Domains: `gateway`, `transaction`, `payment_method`, `certificate`, `environment`, `merchant_profile`, `sub_merchant`, `event`, `protection`, `sca`, `card_refresher`, `network_tokenization`
 
 ## Error Handling
 
@@ -54,7 +54,7 @@ The server uses three environment variable flags to control which tool categorie
 | `TRANSACTION_INITIATION_ENABLED`      | `false` | Tools that initiate action on a payment method with a third party                              |
 | `ADMINISTRATIVE_ENABLED`              | `false` | Tools that create or modify configuration objects (gateways, environments, certificates, etc.) |
 
-Read-only tools (list, show, transcript) are always available regardless of flag settings. Some tools (receivers, access secrets, workflow transactions, redact operations) are always disabled.
+Read-only tools (list, show, transcript) are always available regardless of flag settings.
 
 If a tool you expect is missing, the corresponding flag has not been enabled in the MCP client configuration.
 
@@ -76,16 +76,10 @@ If a tool you expect is missing, the corresponding flag has not been enabled in 
 - `spreedly_gateway_authorize`, `_purchase`, `_verify`, `_store`, `_general_credit`
 - `spreedly_transaction_capture`, `_void`, `_credit`, `_complete`, `_confirm`
 - `spreedly_payment_method_recache`, `_update_gratis`, `_delete_metadata`
-- `spreedly_receiver_deliver`, `_export`
 
 ### Destructive Tools (irreversible)
 
-- `spreedly_gateway_redact` -- Permanently removes gateway credentials
-- `spreedly_payment_method_redact` -- Permanently removes payment data
-- `spreedly_receiver_redact` -- Permanently removes receiver data
 - `spreedly_transaction_void` -- Voids a transaction (cannot be undone)
-- `spreedly_environment_delete_access_secret` -- Deletes an access secret
-- `spreedly_environment_regenerate_signing_secret` -- Invalidates old secret
 
 ## Should I Reuse a Token?
 
@@ -105,7 +99,7 @@ Spreedly uses tokens to identify resources. Before reusing any token from a prev
 ### Key principles
 
 1. **Never assume -- verify.** If you have a token from a previous step, confirm it still applies. Did the operator switch customers? Switch merchants? Ask for a different gateway?
-2. **When in doubt, ask the operator.** It is always safer to confirm than to guess, especially for `payment_method_token` and `transaction_token` where mistakes have direct financial consequences.
+2. **When in doubt, ask the operator.** It is always safer to confirm than to guess, especially for `payment_method_token` and `transaction_token` where mistakes have direct financial consequences. However, when the operator's request already contains all required parameters (amount, currency, payment method, gateway type or token), proceed with the operation -- do not re-confirm values they explicitly provided.
 3. **Do not recreate what already exists.** If the context has not changed and you have the right token, use it. Do not re-list gateways or recreate configuration objects for each transaction.
 4. **Do not create configuration objects per-transaction.** Gateways, SCA providers, merchant profiles, and sub-merchants are long-lived. If you need one and don't have the token, use the corresponding `_list` tool to find an existing one before creating a new one.
 

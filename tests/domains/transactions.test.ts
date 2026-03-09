@@ -121,45 +121,8 @@ describe("transaction tools", () => {
     });
   });
 
-  describe("spreedly_transaction_authorize_workflow", () => {
-    it("creates workflow authorization", async () => {
-      const { transport, calls } = createMockTransport(
-        new Map([
-          [
-            "POST /transactions/authorize.json",
-            { data: fakeTransaction({ transaction_type: "Authorization" }) },
-          ],
-        ]),
-      );
-      await findTool("spreedly_transaction_authorize_workflow").handler(
-        { payment_method_token: "FakePMToken_pm001", amount: 1000, currency_code: "USD" },
-        { transport },
-      );
-      expect(calls[0].options?.body).toEqual({
-        transaction: {
-          payment_method_token: "FakePMToken_pm001",
-          amount: 1000,
-          currency_code: "USD",
-        },
-      });
-    });
-  });
-
-  describe("spreedly_transaction_purchase_workflow", () => {
-    it("creates workflow purchase", async () => {
-      const { transport, calls } = createMockTransport(
-        new Map([["POST /transactions/purchase.json", { data: fakeTransaction() }]]),
-      );
-      await findTool("spreedly_transaction_purchase_workflow").handler(
-        { payment_method_token: "FakePMToken_pm001", amount: 2000, currency_code: "EUR" },
-        { transport },
-      );
-      expect(calls[0].method).toBe("POST");
-    });
-  });
-
   it("has correct number of tools", () => {
-    expect(transactionTools.length).toBe(12);
+    expect(transactionTools.length).toBe(9);
   });
 
   it("all tool names follow naming convention", () => {

@@ -4,8 +4,7 @@ export type ToolCategory =
   | "payment_method_tokenization"
   | "transaction_initiation"
   | "administrative"
-  | "always_enabled"
-  | "always_disabled";
+  | "always_enabled";
 
 export interface ToolPolicyConfig {
   paymentMethodTokenizationEnabled: boolean;
@@ -51,26 +50,6 @@ const TOOL_CATEGORIES: Record<string, ToolCategory> = {
   spreedly_sca_create_provider: "administrative",
   spreedly_merchant_profile_create: "administrative",
   spreedly_merchant_profile_update: "administrative",
-
-  // --- always_disabled ---
-  spreedly_receiver_list_supported: "always_disabled",
-  spreedly_receiver_create: "always_disabled",
-  spreedly_receiver_list: "always_disabled",
-  spreedly_receiver_show: "always_disabled",
-  spreedly_receiver_update: "always_disabled",
-  spreedly_receiver_redact: "always_disabled",
-  spreedly_receiver_deliver: "always_disabled",
-  spreedly_receiver_export: "always_disabled",
-  spreedly_environment_create_access_secret: "always_disabled",
-  spreedly_environment_list_access_secrets: "always_disabled",
-  spreedly_environment_show_access_secret: "always_disabled",
-  spreedly_environment_delete_access_secret: "always_disabled",
-  spreedly_environment_regenerate_signing_secret: "always_disabled",
-  spreedly_transaction_authorize_workflow: "always_disabled",
-  spreedly_transaction_purchase_workflow: "always_disabled",
-  spreedly_transaction_verify_workflow: "always_disabled",
-  spreedly_payment_method_redact: "always_disabled",
-  spreedly_gateway_redact: "always_disabled",
 };
 
 export const CATEGORY_GUIDANCE: Record<ToolCategory, string> = {
@@ -81,7 +60,6 @@ export const CATEGORY_GUIDANCE: Record<ToolCategory, string> = {
   payment_method_tokenization:
     "[Tokenization] This operation handles sensitive card data (PAN/CVV). Only use when the merchant has explicitly enabled payment method tokenization.",
   always_enabled: "",
-  always_disabled: "",
 };
 
 export function getToolCategory(toolName: string): ToolCategory {
@@ -93,8 +71,6 @@ export function isToolEnabled(toolName: string, config: ToolPolicyConfig): boole
   switch (category) {
     case "always_enabled":
       return true;
-    case "always_disabled":
-      return false;
     case "payment_method_tokenization":
       return config.paymentMethodTokenizationEnabled;
     case "transaction_initiation":

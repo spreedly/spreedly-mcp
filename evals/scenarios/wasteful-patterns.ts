@@ -1,6 +1,14 @@
 import type { Scenario } from "../lib/types.js";
 import type { MockResponseFn, MockResponseValue } from "../../tests/helpers/transport.js";
-import { toolCalled, toolNotCalled, maxCalls, callOrder } from "../lib/graders.js";
+import {
+  toolCalled,
+  toolCalledWith,
+  toolNotCalled,
+  maxCalls,
+  callOrder,
+  argumentSameAcrossCalls,
+  pausedForInput,
+} from "../lib/graders.js";
 import { fakeGateway, fakeTransaction } from "../../tests/helpers/fixtures.js";
 
 const echoPurchase: MockResponseFn = (_method, path, options) => {
@@ -68,6 +76,7 @@ export const listBeforeCreateGateway: Scenario = {
     toolCalled("spreedly_gateway_list"),
     toolNotCalled("spreedly_gateway_create"),
     toolCalled("spreedly_gateway_purchase"),
+    toolCalledWith("spreedly_gateway_purchase", { gateway_token: "GW_existing_stripe" }),
     callOrder("spreedly_gateway_list", "spreedly_gateway_purchase"),
   ],
 };
@@ -111,15 +120,16 @@ export const noRepeatedGatewayCreation: Scenario = {
 
   graders: [
     toolCalled("spreedly_gateway_purchase", { times: 3 }),
+    argumentSameAcrossCalls("spreedly_gateway_purchase", "gateway_token"),
     maxCalls("spreedly_gateway_create", 0),
     maxCalls("spreedly_gateway_list", 1),
   ],
 };
 
-export const checkExistingBeforeCreate: Scenario = {
-  name: "Check for existing Stripe gateway before creating one",
+export const findExistingSandboxGateway: Scenario = {
+  name: "Find existing sandbox gateway instead of creating one",
   description:
-    "When asked to create a Stripe gateway but one already exists, the AI should list first and avoid creating.",
+    "When asked to get a gateway token for sandbox testing, the AI should list existing gateways and return the matching one.",
 
   policy: {
     paymentMethodTokenizationEnabled: false,
@@ -127,14 +137,62 @@ export const checkExistingBeforeCreate: Scenario = {
     administrativeEnabled: true,
   },
 
-  mockResponses: new Map([
+  mockResponses: new Map<string, MockResponseValue>([
     [
       "GET /gateways.json",
       {
         data: {
           gateways: [
             fakeGateway({
-              token: "GW_existing_stripe",
+              token: "GW_stripe_sandbox",
+              gateway_type: "stripe",
+              name: "Stripe Sandbox",
+            }).gateway,
+          ],
+        },
+      },
+    ],
+    [
+      "POST /gateways.json",
+      { data: fakeGateway({ token: "GW_new_stripe", gateway_type: "stripe" }) },
+    ],
+  ]),
+
+  messages: [
+    {
+      role: "user",
+      content:
+        "I need to make a test transaction on Stripe in sandbox mode. Please get me a gateway token to use.",
+    },
+  ],
+
+  graders: [toolCalled("spreedly_gateway_list"), toolNotCalled("spreedly_gateway_create")],
+};
+
+export const clarifyAmbiguousGateway: Scenario = {
+  name: "Clarify when both sandbox and production gateways exist",
+  description:
+    "When multiple gateways of the same type exist (sandbox + production), the AI should list them and ask which one to use rather than picking one.",
+
+  policy: {
+    paymentMethodTokenizationEnabled: false,
+    transactionInitiationEnabled: false,
+    administrativeEnabled: true,
+  },
+
+  mockResponses: new Map<string, MockResponseValue>([
+    [
+      "GET /gateways.json",
+      {
+        data: {
+          gateways: [
+            fakeGateway({
+              token: "GW_stripe_sandbox",
+              gateway_type: "stripe",
+              name: "Stripe Sandbox",
+            }).gateway,
+            fakeGateway({
+              token: "GW_stripe_production",
               gateway_type: "stripe",
               name: "Stripe Production",
             }).gateway,
@@ -151,18 +209,20 @@ export const checkExistingBeforeCreate: Scenario = {
   messages: [
     {
       role: "user",
-      content: "Create a Stripe gateway for me.",
+      content: "I need to run a transaction on Stripe. Please get me a gateway token to use.",
     },
   ],
 
   graders: [
     toolCalled("spreedly_gateway_list"),
-    callOrder("spreedly_gateway_list", "spreedly_gateway_create"),
+    toolNotCalled("spreedly_gateway_create"),
+    pausedForInput(),
   ],
 };
 
 export const wastefulPatternScenarios: Scenario[] = [
   listBeforeCreateGateway,
   noRepeatedGatewayCreation,
-  checkExistingBeforeCreate,
+  findExistingSandboxGateway,
+  clarifyAmbiguousGateway,
 ];

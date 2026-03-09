@@ -1,4 +1,4 @@
-import type { ToolCallRecord, GradeResult, Grader } from "./types.js";
+import type { ToolCallRecord, LLMMessage, GradeResult, Grader } from "./types.js";
 
 export function toolCalled(toolName: string, opts?: { times?: number }): Grader {
   return (calls: ToolCallRecord[]): GradeResult => {
@@ -135,6 +135,22 @@ export function maxCalls(toolName: string, max: number): Grader {
         count <= max
           ? `${toolName} called ${count} time(s) (max: ${max})`
           : `${toolName} called ${count} time(s), exceeds max of ${max}`,
+    };
+  };
+}
+
+export function pausedForInput(): Grader {
+  return (_calls: ToolCallRecord[], messages: LLMMessage[]): GradeResult => {
+    const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+    if (!lastAssistant) {
+      return { pass: false, reason: "No assistant response found" };
+    }
+    const hasToolCalls = lastAssistant.tool_calls && lastAssistant.tool_calls.length > 0;
+    return {
+      pass: !hasToolCalls,
+      reason: hasToolCalls
+        ? "Model continued making tool calls instead of pausing for user input"
+        : "Model paused for user input",
     };
   };
 }

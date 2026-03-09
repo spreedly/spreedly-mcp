@@ -11,7 +11,7 @@ export interface GradeResult {
   reason: string;
 }
 
-export type Grader = (calls: ToolCallRecord[]) => GradeResult;
+export type Grader = (calls: ToolCallRecord[], messages: LLMMessage[]) => GradeResult;
 
 export interface Scenario {
   name: string;
@@ -24,14 +24,23 @@ export interface Scenario {
 
 export interface ScenarioResult {
   scenario: string;
+  group: string;
   grades: GradeResult[];
   passed: boolean;
   toolCalls: ToolCallRecord[];
+  finalResponse?: string;
+}
+
+export interface EvalGroupResult {
+  group: string;
+  scenarios: ScenarioResult[];
+  totalPassed: number;
+  totalFailed: number;
 }
 
 export interface EvalResult {
   model: string;
-  scenarios: ScenarioResult[];
+  groups: EvalGroupResult[];
   totalPassed: number;
   totalFailed: number;
 }

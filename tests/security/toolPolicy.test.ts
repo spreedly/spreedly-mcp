@@ -162,13 +162,6 @@ describe("getToolCategory", () => {
     expect(getToolCategory("spreedly_merchant_profile_create")).toBe("administrative");
   });
 
-  it("returns 'always_disabled' for disabled tools", () => {
-    expect(getToolCategory("spreedly_receiver_create")).toBe("always_disabled");
-    expect(getToolCategory("spreedly_gateway_redact")).toBe("always_disabled");
-    expect(getToolCategory("spreedly_payment_method_redact")).toBe("always_disabled");
-    expect(getToolCategory("spreedly_transaction_authorize_workflow")).toBe("always_disabled");
-  });
-
   it("returns 'always_enabled' for unmapped tools (default)", () => {
     expect(getToolCategory("spreedly_gateway_list")).toBe("always_enabled");
     expect(getToolCategory("spreedly_transaction_show")).toBe("always_enabled");
@@ -180,11 +173,6 @@ describe("isToolEnabled", () => {
   it("always enables always_enabled tools regardless of config", () => {
     expect(isToolEnabled("spreedly_gateway_list", ALL_DISABLED)).toBe(true);
     expect(isToolEnabled("spreedly_gateway_list", ALL_ENABLED)).toBe(true);
-  });
-
-  it("always disables always_disabled tools regardless of config", () => {
-    expect(isToolEnabled("spreedly_receiver_create", ALL_DISABLED)).toBe(false);
-    expect(isToolEnabled("spreedly_receiver_create", ALL_ENABLED)).toBe(false);
   });
 
   it("respects paymentMethodTokenizationEnabled flag", () => {
@@ -221,7 +209,6 @@ describe("filterTools", () => {
     makeTool("spreedly_gateway_create"),
     makeTool("spreedly_gateway_authorize"),
     makeTool("spreedly_payment_method_create"),
-    makeTool("spreedly_receiver_create"),
   ];
 
   it("with all flags disabled, only always_enabled tools remain", () => {
@@ -230,14 +217,13 @@ describe("filterTools", () => {
     expect(names).toEqual(["spreedly_gateway_list"]);
   });
 
-  it("with all flags enabled, always_disabled tools are still excluded", () => {
+  it("with all flags enabled, all tools are included", () => {
     const result = filterTools(tools, ALL_ENABLED);
     const names = result.map((t) => t.name);
     expect(names).toContain("spreedly_gateway_list");
     expect(names).toContain("spreedly_gateway_create");
     expect(names).toContain("spreedly_gateway_authorize");
     expect(names).toContain("spreedly_payment_method_create");
-    expect(names).not.toContain("spreedly_receiver_create");
   });
 
   it("enables only the requested category", () => {
@@ -362,7 +348,6 @@ describe("complete tool coverage", () => {
       "transaction_initiation",
       "administrative",
       "always_enabled",
-      "always_disabled",
     ]);
 
     for (const tool of allTools) {
@@ -380,23 +365,14 @@ describe("complete tool coverage", () => {
     }
   });
 
-  it("always_disabled tools are excluded even with all flags enabled", () => {
+  it("with all flags enabled, every tool in allTools is included", () => {
     const enabledTools = filterTools(allTools, ALL_ENABLED);
-    const enabledNames = new Set(enabledTools.map((t) => t.name));
-
-    for (const tool of allTools) {
-      if (getToolCategory(tool.name) === "always_disabled") {
-        expect(enabledNames.has(tool.name)).toBe(false);
-      }
-    }
+    expect(enabledTools.length).toBe(allTools.length);
   });
 
   it("all tools from allTools are accounted for across categories", () => {
     const alwaysEnabledCount = allTools.filter(
       (t) => getToolCategory(t.name) === "always_enabled",
-    ).length;
-    const alwaysDisabledCount = allTools.filter(
-      (t) => getToolCategory(t.name) === "always_disabled",
     ).length;
     const tokenizationCount = allTools.filter(
       (t) => getToolCategory(t.name) === "payment_method_tokenization",
@@ -406,8 +382,7 @@ describe("complete tool coverage", () => {
     ).length;
     const adminCount = allTools.filter((t) => getToolCategory(t.name) === "administrative").length;
 
-    const total =
-      alwaysEnabledCount + alwaysDisabledCount + tokenizationCount + transactionCount + adminCount;
+    const total = alwaysEnabledCount + tokenizationCount + transactionCount + adminCount;
     expect(total).toBe(allTools.length);
   });
 });
