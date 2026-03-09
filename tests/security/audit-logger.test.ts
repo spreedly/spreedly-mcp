@@ -81,7 +81,7 @@ describe("emitAuditEvent", () => {
     expect(stderrSpy).toHaveBeenCalledOnce();
   });
 
-  it("classifies SpreedlyError with code and status", () => {
+  it("classifies SpreedlyError with errorCode", () => {
     emitAuditEvent(
       "spreedly_gateway_authorize",
       "TestEnvKey123",
@@ -92,10 +92,9 @@ describe("emitAuditEvent", () => {
     const parsed = JSON.parse((stderrSpy.mock.calls[0][0] as string).trim());
     expect(parsed.status).toBe("error");
     expect(parsed.errorCode).toBe("AUTH_ERROR");
-    expect(parsed.httpStatusCode).toBe(401);
   });
 
-  it("classifies SpreedlyValidationError with field errors", () => {
+  it("classifies SpreedlyValidationError with errorCode", () => {
     emitAuditEvent(
       "spreedly_payment_method_create",
       "TestEnvKey123",
@@ -106,7 +105,6 @@ describe("emitAuditEvent", () => {
     const parsed = JSON.parse((stderrSpy.mock.calls[0][0] as string).trim());
     expect(parsed.status).toBe("error");
     expect(parsed.errorCode).toBe("VALIDATION_ERROR");
-    expect(parsed.httpStatusCode).toBe(422);
   });
 
   it("classifies generic Error as INTERNAL_ERROR", () => {
@@ -134,35 +132,53 @@ describe("emitAuditEvent", () => {
     expect(parsed.errorCode).toBe("UNKNOWN_ERROR");
   });
 
-  it("includes requestId when provided on success", () => {
-    emitAuditEvent("spreedly_gateway_list", "TestEnvKey123", Date.now(), undefined, "req-abc-123");
+  it("includes httpStatusCode on success when provided via httpContext", () => {
+    emitAuditEvent("spreedly_gateway_list", "TestEnvKey123", Date.now(), undefined, {
+      requestId: "req-ok",
+      httpStatusCode: 200,
+    });
 
     const parsed = JSON.parse((stderrSpy.mock.calls[0][0] as string).trim());
     expect(parsed.status).toBe("success");
-    expect(parsed.requestId).toBe("req-abc-123");
+    expect(parsed.httpStatusCode).toBe(200);
+    expect(parsed.requestId).toBe("req-ok");
   });
 
-  it("includes requestId when provided on error", () => {
+  it("includes httpStatusCode on error when provided via httpContext", () => {
     emitAuditEvent(
       "spreedly_gateway_authorize",
       "TestEnvKey123",
       Date.now(),
       new SpreedlyAuthError(),
-      "req-err-456",
+      {
+        requestId: "req-err",
+        httpStatusCode: 401,
+      },
     );
 
     const parsed = JSON.parse((stderrSpy.mock.calls[0][0] as string).trim());
     expect(parsed.status).toBe("error");
-    expect(parsed.requestId).toBe("req-err-456");
     expect(parsed.errorCode).toBe("AUTH_ERROR");
+    expect(parsed.httpStatusCode).toBe(401);
+    expect(parsed.requestId).toBe("req-err");
   });
 
-  it("omits requestId when not provided", () => {
+  it("omits httpStatusCode and requestId when httpContext is not provided", () => {
     emitAuditEvent("spreedly_gateway_list", "TestEnvKey123", Date.now());
 
     const parsed = JSON.parse((stderrSpy.mock.calls[0][0] as string).trim());
-    expect(parsed.requestId).toBeUndefined();
     expect(Object.keys(parsed)).not.toContain("requestId");
+    expect(Object.keys(parsed)).not.toContain("httpStatusCode");
+  });
+
+  it("omits httpStatusCode when httpContext has only requestId", () => {
+    emitAuditEvent("spreedly_gateway_list", "TestEnvKey123", Date.now(), undefined, {
+      requestId: "req-only",
+    });
+
+    const parsed = JSON.parse((stderrSpy.mock.calls[0][0] as string).trim());
+    expect(parsed.requestId).toBe("req-only");
+    expect(Object.keys(parsed)).not.toContain("httpStatusCode");
   });
 
   it("never includes request or response bodies in output", () => {

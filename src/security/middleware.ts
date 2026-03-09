@@ -25,47 +25,58 @@ export function wrapHandler<TParams extends Record<string, unknown>>(
 ): (raw: unknown, ctx: ToolContext) => Promise<McpToolResult> {
   return async (raw: unknown, ctx: ToolContext): Promise<McpToolResult> => {
     const startTime = Date.now();
-    const { transport: tracked, getLastRequestId } = withRequestIdTracking(ctx.transport);
+    const { transport: tracked, getHttpContext } = withHttpTracking(ctx.transport);
     try {
       const rawParams = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
       const sanitized = sanitizeParams(rawParams);
       const validated = validate(sanitized);
       const result = await handler(validated, { ...ctx, transport: tracked });
       const text = typeof result === "string" ? result : JSON.stringify(result, null, 2);
-      emitAuditEvent(toolName, ctx.environmentKey, startTime, undefined, getLastRequestId());
+      emitAuditEvent(toolName, ctx.environmentKey, startTime, undefined, getHttpContext());
       return { content: [{ type: "text", text }] };
     } catch (error) {
-      const requestId =
-        getLastRequestId() ?? (error instanceof SpreedlyError ? error.requestId : undefined);
-      emitAuditEvent(toolName, ctx.environmentKey, startTime, error, requestId);
+      const ctx_ = getHttpContext();
+      if (!ctx_.requestId && error instanceof SpreedlyError && error.requestId) {
+        ctx_.requestId = error.requestId;
+      }
+      if (ctx_.httpStatusCode === undefined && error instanceof SpreedlyError) {
+        ctx_.httpStatusCode = error.statusCode;
+      }
+      emitAuditEvent(toolName, ctx.environmentKey, startTime, error, ctx_);
       return formatError(error);
     }
   };
 }
 
 /**
- * Wraps a transport to capture the `x-request-id` response header from the
- * most recent Spreedly API call. Works on both success and error paths —
+ * Wraps a transport to capture HTTP metadata (`x-request-id` and status code)
+ * from the most recent Spreedly API call. Works on both success and error paths —
  * when the transport throws a {@link SpreedlyError}, the wrapper reads
- * `error.requestId` (set by {@link mapHttpStatusToError}).
+ * `error.requestId` and `error.statusCode`.
  */
-function withRequestIdTracking(transport: SpreedlyTransport) {
+function withHttpTracking(transport: SpreedlyTransport) {
   let lastRequestId: string | undefined;
+  let lastHttpStatusCode: number | undefined;
   const tracked: SpreedlyTransport = Object.freeze({
     async request<T>(...args: Parameters<SpreedlyTransport["request"]>) {
       try {
         const response = await transport.request<T>(...args);
         lastRequestId = response.headers[REQUEST_ID_HEADER];
+        lastHttpStatusCode = response.status;
         return response;
       } catch (error) {
-        if (error instanceof SpreedlyError && error.requestId) {
-          lastRequestId = error.requestId;
+        if (error instanceof SpreedlyError) {
+          if (error.requestId) lastRequestId = error.requestId;
+          if (error.statusCode !== undefined) lastHttpStatusCode = error.statusCode;
         }
         throw error;
       }
     },
   });
-  return { transport: tracked, getLastRequestId: () => lastRequestId };
+  return {
+    transport: tracked,
+    getHttpContext: () => ({ requestId: lastRequestId, httpStatusCode: lastHttpStatusCode }),
+  };
 }
 
 function formatError(error: unknown): McpToolResult {

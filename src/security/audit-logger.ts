@@ -34,9 +34,9 @@ interface AuditEntry {
    */
   errorCode?: string;
   /**
-   * The HTTP status code from the Spreedly API response (e.g. 401, 422, 502).
-   * Only present when the error originated from an HTTP response.
-   * Absent for non-HTTP errors and on success.
+   * The HTTP status code from the Spreedly API response (e.g. 200, 401, 422).
+   * Present whenever a Spreedly API call was made, regardless of success or failure.
+   * Absent when no HTTP request was made (e.g. validation rejection).
    */
   httpStatusCode?: number;
 }
@@ -57,17 +57,17 @@ interface AuditEntry {
  * @param environmentKey - The SPREEDLY_ENVIRONMENT_KEY for user identification.
  * @param startTime - The `Date.now()` timestamp captured before handler execution.
  * @param error - The caught error, if the tool invocation failed.
- * @param requestId - The `x-request-id` response header from the last Spreedly API call, if available.
+ * @param httpContext - Optional HTTP context from the last Spreedly API call.
  */
 export function emitAuditEvent(
   toolName: string,
   environmentKey: string,
   startTime: number,
   error?: unknown,
-  requestId?: string,
+  httpContext?: { requestId?: string; httpStatusCode?: number },
 ): void {
   try {
-    const entry = buildAuditEntry(toolName, environmentKey, startTime, error, requestId);
+    const entry = buildAuditEntry(toolName, environmentKey, startTime, error, httpContext);
     if ((process.env.SPREEDLY_MCP_LOG_LEVEL ?? "info").toLowerCase() === "silent") return;
     process.stderr.write(JSON.stringify(entry) + "\n");
   } catch {
@@ -95,7 +95,7 @@ export function emitAuditEvent(
  * @param environmentKey - The SPREEDLY_ENVIRONMENT_KEY.
  * @param startTime - The `Date.now()` timestamp captured before handler execution.
  * @param error - The caught error, if any.
- * @param requestId - The `x-request-id` response header, if available.
+ * @param httpContext - Optional HTTP context from the last Spreedly API call.
  * @returns A fully populated audit entry ready for serialization.
  */
 function buildAuditEntry(
@@ -103,7 +103,7 @@ function buildAuditEntry(
   environmentKey: string,
   startTime: number,
   error?: unknown,
-  requestId?: string,
+  httpContext?: { requestId?: string; httpStatusCode?: number },
 ): AuditEntry {
   const entry: AuditEntry = {
     timestamp: new Date().toISOString(),
@@ -115,15 +115,15 @@ function buildAuditEntry(
     durationMs: Date.now() - startTime,
   };
 
-  if (requestId) {
-    entry.requestId = requestId;
+  if (httpContext?.requestId) {
+    entry.requestId = httpContext.requestId;
+  }
+  if (httpContext?.httpStatusCode !== undefined) {
+    entry.httpStatusCode = httpContext.httpStatusCode;
   }
 
   if (error instanceof SpreedlyError) {
     entry.errorCode = error.code;
-    if (error.statusCode !== undefined) {
-      entry.httpStatusCode = error.statusCode;
-    }
   } else if (error instanceof Error) {
     entry.errorCode = "INTERNAL_ERROR";
   } else if (error !== undefined) {

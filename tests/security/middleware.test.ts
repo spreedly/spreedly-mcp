@@ -223,7 +223,7 @@ describe("wrapHandler middleware", () => {
     expect(result.content[0].text).toContain("AUTH_ERROR");
   });
 
-  it("includes x-request-id in audit log on success", async () => {
+  it("includes x-request-id and httpStatusCode in audit log on success", async () => {
     const responses = new Map([
       [
         "GET /gateways.json",
@@ -246,6 +246,7 @@ describe("wrapHandler middleware", () => {
     expect(stderrSpy).toHaveBeenCalledOnce();
     const entry = JSON.parse((stderrSpy.mock.calls[0][0] as string).trim());
     expect(entry.requestId).toBe("req-success-001");
+    expect(entry.httpStatusCode).toBe(200);
     expect(entry.status).toBe("success");
   });
 
