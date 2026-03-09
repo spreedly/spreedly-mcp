@@ -215,6 +215,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide, including local MCP c
 4. Ensure all checks pass: `npm test && npm run typecheck && npm run lint`
 5. Submit a pull request
 
+## Disclaimer
+
+See [DISCLAIMER.md](DISCLAIMER.md) for information on third-party AI integration, shared responsibility, and operational risk.
+
 ## License
 
 MIT -- see [LICENSE](LICENSE)
