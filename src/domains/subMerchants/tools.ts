@@ -49,8 +49,13 @@ export const subMerchantTools: ToolDefinition[] = [
     description: TOOL_DESCRIPTIONS.spreedly_sub_merchant_update,
     schema: UpdateSubMerchantSchema.shape,
     handler: async (params, { transport }) => {
-      const { sub_merchant_key, sub_merchant } = params as { sub_merchant_key: string; sub_merchant: Record<string, unknown> };
-      const res = await transport.request("PUT", `/sub_merchants/${sub_merchant_key}.json`, { body: { sub_merchant } });
+      const { sub_merchant_key, sub_merchant } = params as {
+        sub_merchant_key: string;
+        sub_merchant: Record<string, unknown>;
+      };
+      const res = await transport.request("PUT", `/sub_merchants/${sub_merchant_key}.json`, {
+        body: { sub_merchant },
+      });
       return res.data;
     },
   },

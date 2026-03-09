@@ -12,14 +12,21 @@ function findTool(name: string) {
 describe("receiver tools", () => {
   it("lists supported receivers", async () => {
     const options = { receivers: [{ receiver_type: "test" }] };
-    const { transport } = createMockTransport(new Map([["GET /receivers_options.json", { data: options }]]));
+    const { transport } = createMockTransport(
+      new Map([["GET /receivers_options.json", { data: options }]]),
+    );
     const result = await findTool("spreedly_receiver_list_supported").handler({}, { transport });
     expect(result).toEqual(options);
   });
 
   it("creates a receiver", async () => {
-    const { transport, calls } = createMockTransport(new Map([["POST /receivers.json", { data: fakeReceiver() }]]));
-    await findTool("spreedly_receiver_create").handler({ receiver: { receiver_type: "test" } }, { transport });
+    const { transport, calls } = createMockTransport(
+      new Map([["POST /receivers.json", { data: fakeReceiver() }]]),
+    );
+    await findTool("spreedly_receiver_create").handler(
+      { receiver: { receiver_type: "test" } },
+      { transport },
+    );
     expect(calls[0].method).toBe("POST");
   });
 
@@ -31,21 +38,48 @@ describe("receiver tools", () => {
   });
 
   it("shows a receiver", async () => {
-    const { transport } = createMockTransport(new Map([["GET /receivers/FakeRXToken_rx001.json", { data: fakeReceiver() }]]));
-    const result = await findTool("spreedly_receiver_show").handler({ receiver_token: "FakeRXToken_rx001" }, { transport });
+    const { transport } = createMockTransport(
+      new Map([["GET /receivers/FakeRXToken_rx001.json", { data: fakeReceiver() }]]),
+    );
+    const result = await findTool("spreedly_receiver_show").handler(
+      { receiver_token: "FakeRXToken_rx001" },
+      { transport },
+    );
     expect(result).toEqual(fakeReceiver());
   });
 
   it("redacts a receiver", async () => {
-    const { transport, calls } = createMockTransport(new Map([["PUT /receivers/FakeRXToken_rx001/redact.json", { data: fakeReceiver({ state: "redacted" }) }]]));
-    await findTool("spreedly_receiver_redact").handler({ receiver_token: "FakeRXToken_rx001" }, { transport });
+    const { transport, calls } = createMockTransport(
+      new Map([
+        [
+          "PUT /receivers/FakeRXToken_rx001/redact.json",
+          { data: fakeReceiver({ state: "redacted" }) },
+        ],
+      ]),
+    );
+    await findTool("spreedly_receiver_redact").handler(
+      { receiver_token: "FakeRXToken_rx001" },
+      { transport },
+    );
     expect(calls[0].path).toBe("/receivers/FakeRXToken_rx001/redact.json");
   });
 
   it("delivers to a receiver", async () => {
-    const { transport, calls } = createMockTransport(new Map([["POST /receivers/FakeRXToken_rx001/deliver.json", { data: { transaction: { succeeded: true } } }]]));
+    const { transport, calls } = createMockTransport(
+      new Map([
+        [
+          "POST /receivers/FakeRXToken_rx001/deliver.json",
+          { data: { transaction: { succeeded: true } } },
+        ],
+      ]),
+    );
     await findTool("spreedly_receiver_deliver").handler(
-      { receiver_token: "FakeRXToken_rx001", payment_method_token: "FakePMToken_pm001", url: "https://example.com", body: "{}" },
+      {
+        receiver_token: "FakeRXToken_rx001",
+        payment_method_token: "FakePMToken_pm001",
+        url: "https://example.com",
+        body: "{}",
+      },
       { transport },
     );
     expect(calls[0].method).toBe("POST");

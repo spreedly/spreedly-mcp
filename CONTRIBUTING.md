@@ -123,13 +123,13 @@ git diff --cached  # review staged changes
 
 ### Where to store credentials
 
-| Approach | Risk level | Notes |
-|---|---|---|
-| User-level MCP config (e.g. `~/.cursor/mcp.json`) | Low | Outside any repo, won't be committed |
-| Per-project `.cursor/mcp.json` in a **separate** project | Low | Gitignored in that project too |
-| Environment variables in your shell profile | Low | `export SPREEDLY_ENVIRONMENT_KEY=...` in `~/.zshrc` |
-| Per-project `.cursor/mcp.json` **in this repo** | Medium | Gitignored here, but double-check before committing |
-| Hardcoded in source | **Do not do this** | Will be committed and exposed |
+| Approach                                                 | Risk level         | Notes                                               |
+| -------------------------------------------------------- | ------------------ | --------------------------------------------------- |
+| User-level MCP config (e.g. `~/.cursor/mcp.json`)        | Low                | Outside any repo, won't be committed                |
+| Per-project `.cursor/mcp.json` in a **separate** project | Low                | Gitignored in that project too                      |
+| Environment variables in your shell profile              | Low                | `export SPREEDLY_ENVIRONMENT_KEY=...` in `~/.zshrc` |
+| Per-project `.cursor/mcp.json` **in this repo**          | Medium             | Gitignored here, but double-check before committing |
+| Hardcoded in source                                      | **Do not do this** | Will be committed and exposed                       |
 
 ### If credentials are exposed
 
@@ -208,6 +208,7 @@ src/
 ```
 
 Each domain folder contains:
+
 - `tools.ts` -- tool definitions (name, handler, schema)
 - `schemas.ts` -- Zod schemas for input validation
 - `descriptions.ts` -- static tool description strings

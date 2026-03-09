@@ -1,4 +1,8 @@
-import type { SpreedlyTransport, SpreedlyResponse, RequestOptions } from "../../src/transport/types.js";
+import type {
+  SpreedlyTransport,
+  SpreedlyResponse,
+  RequestOptions,
+} from "../../src/transport/types.js";
 import { SpreedlyNotFoundError } from "../../src/transport/errors.js";
 
 export interface MockCall {
@@ -10,6 +14,7 @@ export interface MockCall {
 export interface MockResponseEntry {
   data: unknown;
   status?: number;
+  headers?: Record<string, string>;
 }
 
 export type MockResponseFn = (method: string, path: string, options?: RequestOptions) => MockResponseEntry;
@@ -38,7 +43,7 @@ export function createMockTransport(
       return {
         data: resolved.data as T,
         status: resolved.status ?? 200,
-        headers: {},
+        headers: resolved.headers ?? {},
       };
     },
   });

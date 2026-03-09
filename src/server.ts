@@ -15,7 +15,16 @@ const SERVER_VERSION = "0.1.0";
 export function createServer(
   transport: SpreedlyTransport,
   policy: ToolPolicyConfig,
+  options: { environmentKey: string },
 ): McpServer {
+  const { environmentKey } = options ?? {};
+  if (typeof environmentKey !== "string" || environmentKey.length === 0) {
+    throw new Error(
+      "createServer requires options.environmentKey to be a non-empty string " +
+        `(got ${typeof environmentKey === "string" ? `"" (empty)` : String(environmentKey)}).`,
+    );
+  }
+
   const server = new McpServer({
     name: SERVER_NAME,
     version: SERVER_VERSION,
@@ -25,14 +34,11 @@ export function createServer(
 
   for (const tool of enabledTools) {
     const description = getToolDescription(tool);
-    const wrapped = wrapHandler(
-      tool.handler,
-      (raw) => {
-        if (Object.keys(tool.schema).length === 0) return raw as Record<string, unknown>;
-        const schema = z.object(tool.schema).strict();
-        return schema.parse(raw) as Record<string, unknown>;
-      },
-    );
+    const wrapped = wrapHandler(tool.name, tool.handler, (raw) => {
+      if (Object.keys(tool.schema).length === 0) return raw as Record<string, unknown>;
+      const schema = z.object(tool.schema).strict();
+      return schema.parse(raw) as Record<string, unknown>;
+    });
 
     server.registerTool(
       tool.name,
@@ -41,7 +47,7 @@ export function createServer(
         inputSchema: tool.schema,
       },
       async (params: Record<string, unknown>) => {
-        return wrapped(params, { transport });
+        return wrapped(params, { transport, environmentKey });
       },
     );
   }

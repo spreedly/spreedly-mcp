@@ -29,6 +29,8 @@
     "build": "tsup",
     "test": "vitest run",
     "test:watch": "vitest",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test:evals": "tsx evals/run.ts",

@@ -41,6 +41,9 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error("Spreedly MCP: Fatal startup error:", error instanceof Error ? error.message : error);
+  console.error(
+    "Spreedly MCP: Fatal startup error:",
+    error instanceof Error ? error.message : error,
+  );
   process.exit(1);
 });

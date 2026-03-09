@@ -9,7 +9,10 @@ export const networkTokenizationTools: ToolDefinition[] = [
     schema: CardMetadataSchema.shape,
     handler: async (params, { transport }) => {
       const { payment_method_token } = params as { payment_method_token: string };
-      const res = await transport.request("GET", `/network_tokenization/card_metadata.json?payment_method_token=${encodeURIComponent(payment_method_token)}`);
+      const res = await transport.request(
+        "GET",
+        `/network_tokenization/card_metadata.json?payment_method_token=${encodeURIComponent(payment_method_token)}`,
+      );
       return res.data;
     },
   },
@@ -19,7 +22,10 @@ export const networkTokenizationTools: ToolDefinition[] = [
     schema: TokenStatusSchema.shape,
     handler: async (params, { transport }) => {
       const { payment_method_token } = params as { payment_method_token: string };
-      const res = await transport.request("GET", `/network_tokenization/token_status.json?payment_method_token=${encodeURIComponent(payment_method_token)}`);
+      const res = await transport.request(
+        "GET",
+        `/network_tokenization/token_status.json?payment_method_token=${encodeURIComponent(payment_method_token)}`,
+      );
       return res.data;
     },
   },
