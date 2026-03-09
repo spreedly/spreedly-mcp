@@ -11,7 +11,7 @@ export const ShowTransactionSchema = z.object({
 
 export const UpdateTransactionSchema = z.object({
   transaction_token: z.string().describe("The token of the transaction to update"),
-  metadata: z.record(z.unknown()).optional().describe("Metadata fields to update"),
+  metadata: z.record(z.string(), z.unknown()).optional().describe("Metadata fields to update"),
 }).strict();
 
 export const CaptureTransactionSchema = z.object({
