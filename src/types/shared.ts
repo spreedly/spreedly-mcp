@@ -98,6 +98,6 @@ export interface SpreedlyEvent {
 export interface ToolDefinition {
   name: string;
   description: string;
-  schema: Record<string, unknown>;
+  schema: Record<string, import("zod").ZodTypeAny>;
   handler: (params: Record<string, unknown>, ctx: { transport: import("../transport/types.js").SpreedlyTransport }) => Promise<unknown>;
 }

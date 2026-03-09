@@ -31,6 +31,7 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test:evals": "tsx evals/run.ts",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -58,8 +59,10 @@
     "@eslint/js": "^10.0.1",
     "@types/node": "^25.3.3",
     "eslint": "^10.0.2",
+    "openai": "^6.27.0",
     "prettier": "^3.4.0",
     "tsup": "^8.4.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.56.1",
     "vitest": "^4.0.18"

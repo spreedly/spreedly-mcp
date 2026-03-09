@@ -1,7 +1,7 @@
 export const TOOL_DESCRIPTIONS = Object.freeze({
   // Gateways
   spreedly_gateway_create:
-    "Creates a new gateway connection in Spreedly. Requires a gateway_type and optional credentials. Returns the created gateway configuration. This tool ONLY creates gateways and does not process payments.",
+    "Creates a new gateway connection in Spreedly. Requires a gateway_type and optional credentials. Returns the created gateway configuration. This tool ONLY creates gateways and does not process payments. Before creating a new gateway, use spreedly_gateway_list to check if one already exists for your gateway type.",
   spreedly_gateway_list:
     "Lists all gateway connections configured in your Spreedly environment. Returns an array of gateway summaries. This tool ONLY reads data and does not modify anything.",
   spreedly_gateway_show:

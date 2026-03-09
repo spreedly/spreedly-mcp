@@ -71,6 +71,67 @@ Edit `.vscode/mcp.json`:
 
 For details, see [Spreedly Credentials Documentation](https://docs.spreedly.com/basics/credentials/).
 
+## Tool Access Policy
+
+The server controls which tools are available through three environment variable flags. **All default to `false`** -- only read-only tools are available out of the box. Enable the categories you need:
+
+| Variable | Default | What it enables |
+|----------|---------|-----------------|
+| `PAYMENT_METHOD_TOKENIZATION_ENABLED` | `false` | Creating and recaching payment methods (sends PAN/CVV data) |
+| `TRANSACTION_INITIATION_ENABLED` | `false` | Authorizing, purchasing, capturing, voiding, refunding, and other third-party actions |
+| `ADMINISTRATIVE_ENABLED` | `false` | Creating/updating gateways, environments, certificates, merchant profiles, SCA providers, sub-merchants |
+
+### Recommended Configuration Profiles
+
+**Read-only / monitoring** (default -- no flags needed):
+
+```json
+"env": {
+  "SPREEDLY_ENVIRONMENT_KEY": "<your-environment-key>",
+  "SPREEDLY_ACCESS_SECRET": "<your-access-secret>"
+}
+```
+
+Only list/show tools are available. Good for dashboards, reporting, and investigating transactions.
+
+**Transaction processing** (recommended for AI-assisted payments):
+
+```json
+"env": {
+  "SPREEDLY_ENVIRONMENT_KEY": "<your-environment-key>",
+  "SPREEDLY_ACCESS_SECRET": "<your-access-secret>",
+  "TRANSACTION_INITIATION_ENABLED": "true"
+}
+```
+
+Enables authorizing, capturing, voiding, and refunding against existing gateways. Does not allow creating gateways or tokenizing raw card data -- the safest profile for conducting transactions.
+
+**Administrative setup:**
+
+```json
+"env": {
+  "SPREEDLY_ENVIRONMENT_KEY": "<your-environment-key>",
+  "SPREEDLY_ACCESS_SECRET": "<your-access-secret>",
+  "ADMINISTRATIVE_ENABLED": "true"
+}
+```
+
+For initial environment setup -- creating gateways, merchant profiles, SCA providers. Disable once configuration is complete.
+
+**Full access:**
+
+```json
+"env": {
+  "SPREEDLY_ENVIRONMENT_KEY": "<your-environment-key>",
+  "SPREEDLY_ACCESS_SECRET": "<your-access-secret>",
+  "PAYMENT_METHOD_TOKENIZATION_ENABLED": "true",
+  "TRANSACTION_INITIATION_ENABLED": "true",
+  "ADMINISTRATIVE_ENABLED": "true"
+}
+```
+
+All tool categories enabled. Use only in controlled environments or during initial setup.
+
 ## Available Tools
 
 ### Gateways (13 tools)
