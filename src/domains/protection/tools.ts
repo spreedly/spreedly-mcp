@@ -20,8 +20,13 @@ export const protectionTools: ToolDefinition[] = [
     description: TOOL_DESCRIPTIONS.spreedly_protection_forward_claim,
     schema: ForwardClaimSchema.shape,
     handler: async (params, { transport }) => {
-      const { transaction_token, claim } = params as { transaction_token: string; claim: Record<string, unknown> };
-      const res = await transport.request("POST", `/protection/${transaction_token}/claims.json`, { body: { claim } });
+      const { transaction_token, claim } = params as {
+        transaction_token: string;
+        claim: Record<string, unknown>;
+      };
+      const res = await transport.request("POST", `/protection/${transaction_token}/claims.json`, {
+        body: { claim },
+      });
       return res.data;
     },
   },
@@ -61,7 +66,10 @@ export const protectionTools: ToolDefinition[] = [
     schema: ShowProtectionProviderSchema.shape,
     handler: async (params, { transport }) => {
       const { protection_provider_token } = params as { protection_provider_token: string };
-      const res = await transport.request("GET", `/protection/providers/${protection_provider_token}.json`);
+      const res = await transport.request(
+        "GET",
+        `/protection/providers/${protection_provider_token}.json`,
+      );
       return res.data;
     },
   },

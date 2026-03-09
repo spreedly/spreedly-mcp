@@ -63,7 +63,7 @@ export function createTransport(
       }
 
       if (!response.ok) {
-        throw mapHttpStatusToError(response.status, data);
+        throw mapHttpStatusToError(response.status, data, responseHeaders["x-request-id"]);
       }
 
       return { data, status: response.status, headers: responseHeaders };

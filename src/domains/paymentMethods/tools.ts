@@ -58,8 +58,13 @@ export const paymentMethodTools: ToolDefinition[] = [
     description: TOOL_DESCRIPTIONS.spreedly_payment_method_update,
     schema: UpdatePaymentMethodSchema.shape,
     handler: async (params, { transport }) => {
-      const { payment_method_token, payment_method } = params as { payment_method_token: string; payment_method: Record<string, unknown> };
-      const res = await transport.request("PUT", `/payment_methods/${payment_method_token}.json`, { body: { payment_method } });
+      const { payment_method_token, payment_method } = params as {
+        payment_method_token: string;
+        payment_method: Record<string, unknown>;
+      };
+      const res = await transport.request("PUT", `/payment_methods/${payment_method_token}.json`, {
+        body: { payment_method },
+      });
       return res.data;
     },
   },
@@ -69,7 +74,10 @@ export const paymentMethodTools: ToolDefinition[] = [
     schema: RetainPaymentMethodSchema.shape,
     handler: async (params, { transport }) => {
       const { payment_method_token } = params as { payment_method_token: string };
-      const res = await transport.request("PUT", `/payment_methods/${payment_method_token}/retain.json`);
+      const res = await transport.request(
+        "PUT",
+        `/payment_methods/${payment_method_token}/retain.json`,
+      );
       return res.data;
     },
   },
@@ -79,7 +87,10 @@ export const paymentMethodTools: ToolDefinition[] = [
     schema: RedactPaymentMethodSchema.shape,
     handler: async (params, { transport }) => {
       const { payment_method_token } = params as { payment_method_token: string };
-      const res = await transport.request("PUT", `/payment_methods/${payment_method_token}/redact.json`);
+      const res = await transport.request(
+        "PUT",
+        `/payment_methods/${payment_method_token}/redact.json`,
+      );
       return res.data;
     },
   },
@@ -88,8 +99,15 @@ export const paymentMethodTools: ToolDefinition[] = [
     description: TOOL_DESCRIPTIONS.spreedly_payment_method_recache,
     schema: RecachePaymentMethodSchema.shape,
     handler: async (params, { transport }) => {
-      const { payment_method_token, payment_method } = params as { payment_method_token: string; payment_method: Record<string, unknown> };
-      const res = await transport.request("POST", `/payment_methods/${payment_method_token}/recache.json`, { body: { payment_method } });
+      const { payment_method_token, payment_method } = params as {
+        payment_method_token: string;
+        payment_method: Record<string, unknown>;
+      };
+      const res = await transport.request(
+        "POST",
+        `/payment_methods/${payment_method_token}/recache.json`,
+        { body: { payment_method } },
+      );
       return res.data;
     },
   },
@@ -98,9 +116,16 @@ export const paymentMethodTools: ToolDefinition[] = [
     description: TOOL_DESCRIPTIONS.spreedly_payment_method_list_transactions,
     schema: ListPaymentMethodTransactionsSchema.shape,
     handler: async (params, { transport }) => {
-      const { payment_method_token, since_token, order } = params as { payment_method_token: string; since_token?: string; order?: string };
+      const { payment_method_token, since_token, order } = params as {
+        payment_method_token: string;
+        since_token?: string;
+        order?: string;
+      };
       const query = buildQuery({ since_token, order });
-      const res = await transport.request("GET", `/payment_methods/${payment_method_token}/transactions.json${query}`);
+      const res = await transport.request(
+        "GET",
+        `/payment_methods/${payment_method_token}/transactions.json${query}`,
+      );
       return res.data;
     },
   },
@@ -109,9 +134,15 @@ export const paymentMethodTools: ToolDefinition[] = [
     description: TOOL_DESCRIPTIONS.spreedly_payment_method_list_events,
     schema: ListPaymentMethodEventsSchema.shape,
     handler: async (params, { transport }) => {
-      const { payment_method_token, since_token } = params as { payment_method_token: string; since_token?: string };
+      const { payment_method_token, since_token } = params as {
+        payment_method_token: string;
+        since_token?: string;
+      };
       const query = buildQuery({ since_token });
-      const res = await transport.request("GET", `/payment_methods/${payment_method_token}/events.json${query}`);
+      const res = await transport.request(
+        "GET",
+        `/payment_methods/${payment_method_token}/events.json${query}`,
+      );
       return res.data;
     },
   },
@@ -121,7 +152,10 @@ export const paymentMethodTools: ToolDefinition[] = [
     schema: DeletePaymentMethodMetadataSchema.shape,
     handler: async (params, { transport }) => {
       const { payment_method_token } = params as { payment_method_token: string };
-      const res = await transport.request("DELETE", `/payment_methods/${payment_method_token}/metadata.json`);
+      const res = await transport.request(
+        "DELETE",
+        `/payment_methods/${payment_method_token}/metadata.json`,
+      );
       return res.data;
     },
   },
@@ -130,8 +164,15 @@ export const paymentMethodTools: ToolDefinition[] = [
     description: TOOL_DESCRIPTIONS.spreedly_payment_method_update_gratis,
     schema: UpdateGratisSchema.shape,
     handler: async (params, { transport }) => {
-      const { payment_method_token, payment_method } = params as { payment_method_token: string; payment_method: Record<string, unknown> };
-      const res = await transport.request("PUT", `/payment_methods/${payment_method_token}/update_gratis.json`, { body: { payment_method } });
+      const { payment_method_token, payment_method } = params as {
+        payment_method_token: string;
+        payment_method: Record<string, unknown>;
+      };
+      const res = await transport.request(
+        "PUT",
+        `/payment_methods/${payment_method_token}/update_gratis.json`,
+        { body: { payment_method } },
+      );
       return res.data;
     },
   },

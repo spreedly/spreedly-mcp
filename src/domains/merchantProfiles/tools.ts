@@ -40,7 +40,10 @@ export const merchantProfileTools: ToolDefinition[] = [
     schema: ShowMerchantProfileSchema.shape,
     handler: async (params, { transport }) => {
       const { merchant_profile_token } = params as { merchant_profile_token: string };
-      const res = await transport.request("GET", `/merchant_profiles/${merchant_profile_token}.json`);
+      const res = await transport.request(
+        "GET",
+        `/merchant_profiles/${merchant_profile_token}.json`,
+      );
       return res.data;
     },
   },
@@ -49,8 +52,15 @@ export const merchantProfileTools: ToolDefinition[] = [
     description: TOOL_DESCRIPTIONS.spreedly_merchant_profile_update,
     schema: UpdateMerchantProfileSchema.shape,
     handler: async (params, { transport }) => {
-      const { merchant_profile_token, merchant_profile } = params as { merchant_profile_token: string; merchant_profile: Record<string, unknown> };
-      const res = await transport.request("PUT", `/merchant_profiles/${merchant_profile_token}.json`, { body: { merchant_profile } });
+      const { merchant_profile_token, merchant_profile } = params as {
+        merchant_profile_token: string;
+        merchant_profile: Record<string, unknown>;
+      };
+      const res = await transport.request(
+        "PUT",
+        `/merchant_profiles/${merchant_profile_token}.json`,
+        { body: { merchant_profile } },
+      );
       return res.data;
     },
   },

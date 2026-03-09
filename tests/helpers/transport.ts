@@ -1,4 +1,8 @@
-import type { SpreedlyTransport, SpreedlyResponse, RequestOptions } from "../../src/transport/types.js";
+import type {
+  SpreedlyTransport,
+  SpreedlyResponse,
+  RequestOptions,
+} from "../../src/transport/types.js";
 import { SpreedlyNotFoundError } from "../../src/transport/errors.js";
 
 export interface MockCall {
@@ -8,7 +12,10 @@ export interface MockCall {
 }
 
 export function createMockTransport(
-  responses: Map<string, { data: unknown; status?: number }> = new Map(),
+  responses: Map<
+    string,
+    { data: unknown; status?: number; headers?: Record<string, string> }
+  > = new Map(),
 ) {
   const calls: MockCall[] = [];
 
@@ -29,7 +36,7 @@ export function createMockTransport(
           return {
             data: wildcardMatch.data as T,
             status: wildcardMatch.status ?? 200,
-            headers: {},
+            headers: wildcardMatch.headers ?? {},
           };
         }
         throw new SpreedlyNotFoundError(`No mock response for ${key}`);
@@ -37,7 +44,7 @@ export function createMockTransport(
       return {
         data: match.data as T,
         status: match.status ?? 200,
-        headers: {},
+        headers: match.headers ?? {},
       };
     },
   });

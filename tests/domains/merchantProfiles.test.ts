@@ -11,27 +11,44 @@ function findTool(name: string) {
 
 describe("merchant profile tools", () => {
   it("creates a merchant profile", async () => {
-    const { transport, calls } = createMockTransport(new Map([["POST /merchant_profiles.json", { data: fakeMerchantProfile() }]]));
-    await findTool("spreedly_merchant_profile_create").handler({ merchant_profile: { name: "Test" } }, { transport });
+    const { transport, calls } = createMockTransport(
+      new Map([["POST /merchant_profiles.json", { data: fakeMerchantProfile() }]]),
+    );
+    await findTool("spreedly_merchant_profile_create").handler(
+      { merchant_profile: { name: "Test" } },
+      { transport },
+    );
     expect(calls[0].method).toBe("POST");
   });
 
   it("lists merchant profiles", async () => {
     const list = { merchant_profiles: [fakeMerchantProfile().merchant_profile] };
-    const { transport } = createMockTransport(new Map([["GET /merchant_profiles.json", { data: list }]]));
+    const { transport } = createMockTransport(
+      new Map([["GET /merchant_profiles.json", { data: list }]]),
+    );
     const result = await findTool("spreedly_merchant_profile_list").handler({}, { transport });
     expect(result).toEqual(list);
   });
 
   it("shows a merchant profile", async () => {
-    const { transport } = createMockTransport(new Map([["GET /merchant_profiles/FakeMPToken_mp001.json", { data: fakeMerchantProfile() }]]));
-    const result = await findTool("spreedly_merchant_profile_show").handler({ merchant_profile_token: "FakeMPToken_mp001" }, { transport });
+    const { transport } = createMockTransport(
+      new Map([["GET /merchant_profiles/FakeMPToken_mp001.json", { data: fakeMerchantProfile() }]]),
+    );
+    const result = await findTool("spreedly_merchant_profile_show").handler(
+      { merchant_profile_token: "FakeMPToken_mp001" },
+      { transport },
+    );
     expect(result).toEqual(fakeMerchantProfile());
   });
 
   it("updates a merchant profile", async () => {
-    const { transport, calls } = createMockTransport(new Map([["PUT /merchant_profiles/FakeMPToken_mp001.json", { data: fakeMerchantProfile() }]]));
-    await findTool("spreedly_merchant_profile_update").handler({ merchant_profile_token: "FakeMPToken_mp001", merchant_profile: { name: "Updated" } }, { transport });
+    const { transport, calls } = createMockTransport(
+      new Map([["PUT /merchant_profiles/FakeMPToken_mp001.json", { data: fakeMerchantProfile() }]]),
+    );
+    await findTool("spreedly_merchant_profile_update").handler(
+      { merchant_profile_token: "FakeMPToken_mp001", merchant_profile: { name: "Updated" } },
+      { transport },
+    );
     expect(calls[0].method).toBe("PUT");
   });
 

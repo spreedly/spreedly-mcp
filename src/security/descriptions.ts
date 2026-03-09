@@ -42,8 +42,7 @@ export const TOOL_DESCRIPTIONS = Object.freeze({
     "Refunds a previously captured transaction, fully or partially. Requires a transaction_token. This tool issues a refund.",
   spreedly_transaction_complete:
     "Completes a pending transaction that required further action. Requires a transaction_token.",
-  spreedly_transaction_confirm:
-    "Confirms a pending transaction. Requires a transaction_token.",
+  spreedly_transaction_confirm: "Confirms a pending transaction. Requires a transaction_token.",
   spreedly_transaction_transcript:
     "Retrieves the raw gateway communication transcript for a transaction. Returns request/response logs. This tool ONLY reads data.",
   spreedly_transaction_authorize_workflow:
@@ -132,8 +131,7 @@ export const TOOL_DESCRIPTIONS = Object.freeze({
   // Merchant Profiles
   spreedly_merchant_profile_create:
     "Creates a new merchant profile. Returns the profile configuration. This tool ONLY creates profiles.",
-  spreedly_merchant_profile_list:
-    "Lists all merchant profiles. This tool ONLY reads data.",
+  spreedly_merchant_profile_list: "Lists all merchant profiles. This tool ONLY reads data.",
   spreedly_merchant_profile_show:
     "Retrieves details of a single merchant profile. This tool ONLY reads data.",
   spreedly_merchant_profile_update:
@@ -142,8 +140,7 @@ export const TOOL_DESCRIPTIONS = Object.freeze({
   // Sub Merchants
   spreedly_sub_merchant_create:
     "Creates a new sub-merchant. Returns the sub-merchant configuration. This tool ONLY creates sub-merchants.",
-  spreedly_sub_merchant_list:
-    "Lists all sub-merchants. This tool ONLY reads data.",
+  spreedly_sub_merchant_list: "Lists all sub-merchants. This tool ONLY reads data.",
   spreedly_sub_merchant_show:
     "Retrieves details of a single sub-merchant. This tool ONLY reads data.",
   spreedly_sub_merchant_update:
@@ -172,8 +169,7 @@ export const TOOL_DESCRIPTIONS = Object.freeze({
     "Authenticates a payment method via an SCA provider for 3D Secure flows. Returns authentication data.",
   spreedly_sca_create_provider:
     "Creates a new SCA provider on a merchant profile. This tool ONLY creates providers.",
-  spreedly_sca_show_provider:
-    "Retrieves details of an SCA provider. This tool ONLY reads data.",
+  spreedly_sca_show_provider: "Retrieves details of an SCA provider. This tool ONLY reads data.",
 
   // Card Refresher
   spreedly_card_refresher_inquiry:
@@ -190,6 +186,5 @@ export const TOOL_DESCRIPTIONS = Object.freeze({
     "Retrieves the status of a network token. This tool ONLY reads data.",
 
   // Payment (show)
-  spreedly_payment_show:
-    "Retrieves details of a payment by its token. This tool ONLY reads data.",
+  spreedly_payment_show: "Retrieves details of a payment by its token. This tool ONLY reads data.",
 } as const);

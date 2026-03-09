@@ -1,7 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { gatewayTools } from "../../src/domains/gateways/tools.js";
 import { createMockTransport } from "../helpers/transport.js";
-import { fakeGateway, fakeGatewayList, fakeGatewayOptions, fakeTransaction, fakeTransactionList } from "../helpers/fixtures.js";
+import {
+  fakeGateway,
+  fakeGatewayList,
+  fakeGatewayOptions,
+  fakeTransaction,
+  fakeTransactionList,
+} from "../helpers/fixtures.js";
 
 function findTool(name: string) {
   const tool = gatewayTools.find((t) => t.name === name);
@@ -52,7 +58,10 @@ describe("gateway tools", () => {
         new Map([["PUT /gateways/FakeGWToken_abc123.json", { data: fakeGateway() }]]),
       );
       const tool = findTool("spreedly_gateway_update");
-      await tool.handler({ gateway_token: "FakeGWToken_abc123", credentials: { login: "new" } }, { transport });
+      await tool.handler(
+        { gateway_token: "FakeGWToken_abc123", credentials: { login: "new" } },
+        { transport },
+      );
       expect(calls[0].method).toBe("PUT");
       expect(calls[0].options?.body).toEqual({ gateway: { login: "new" } });
     });
@@ -61,7 +70,12 @@ describe("gateway tools", () => {
   describe("spreedly_gateway_redact", () => {
     it("redacts a gateway", async () => {
       const { transport, calls } = createMockTransport(
-        new Map([["PUT /gateways/FakeGWToken_abc123/redact.json", { data: fakeGateway({ state: "redacted" }) }]]),
+        new Map([
+          [
+            "PUT /gateways/FakeGWToken_abc123/redact.json",
+            { data: fakeGateway({ state: "redacted" }) },
+          ],
+        ]),
       );
       const tool = findTool("spreedly_gateway_redact");
       await tool.handler({ gateway_token: "FakeGWToken_abc123" }, { transport });
@@ -94,7 +108,9 @@ describe("gateway tools", () => {
   describe("spreedly_gateway_list_transactions", () => {
     it("lists transactions for a gateway", async () => {
       const { transport } = createMockTransport(
-        new Map([["GET /gateways/FakeGWToken_abc123/transactions.json", { data: fakeTransactionList() }]]),
+        new Map([
+          ["GET /gateways/FakeGWToken_abc123/transactions.json", { data: fakeTransactionList() }],
+        ]),
       );
       const tool = findTool("spreedly_gateway_list_transactions");
       const result = await tool.handler({ gateway_token: "FakeGWToken_abc123" }, { transport });
@@ -105,16 +121,30 @@ describe("gateway tools", () => {
   describe("spreedly_gateway_authorize", () => {
     it("authorizes a payment", async () => {
       const { transport, calls } = createMockTransport(
-        new Map([["POST /gateways/FakeGWToken_abc123/authorize.json", { data: fakeTransaction({ transaction_type: "Authorization" }) }]]),
+        new Map([
+          [
+            "POST /gateways/FakeGWToken_abc123/authorize.json",
+            { data: fakeTransaction({ transaction_type: "Authorization" }) },
+          ],
+        ]),
       );
       const tool = findTool("spreedly_gateway_authorize");
       await tool.handler(
-        { gateway_token: "FakeGWToken_abc123", payment_method_token: "FakePMToken_pm001", amount: 1000, currency_code: "USD" },
+        {
+          gateway_token: "FakeGWToken_abc123",
+          payment_method_token: "FakePMToken_pm001",
+          amount: 1000,
+          currency_code: "USD",
+        },
         { transport },
       );
       expect(calls[0].method).toBe("POST");
       expect(calls[0].options?.body).toEqual({
-        transaction: { payment_method_token: "FakePMToken_pm001", amount: 1000, currency_code: "USD" },
+        transaction: {
+          payment_method_token: "FakePMToken_pm001",
+          amount: 1000,
+          currency_code: "USD",
+        },
       });
     });
   });
@@ -126,7 +156,12 @@ describe("gateway tools", () => {
       );
       const tool = findTool("spreedly_gateway_purchase");
       await tool.handler(
-        { gateway_token: "FakeGWToken_abc123", payment_method_token: "FakePMToken_pm001", amount: 1000, currency_code: "USD" },
+        {
+          gateway_token: "FakeGWToken_abc123",
+          payment_method_token: "FakePMToken_pm001",
+          amount: 1000,
+          currency_code: "USD",
+        },
         { transport },
       );
       expect(calls[0].method).toBe("POST");
@@ -136,11 +171,20 @@ describe("gateway tools", () => {
   describe("spreedly_gateway_verify", () => {
     it("verifies a payment method", async () => {
       const { transport, calls } = createMockTransport(
-        new Map([["POST /gateways/FakeGWToken_abc123/verify.json", { data: fakeTransaction({ transaction_type: "Verification" }) }]]),
+        new Map([
+          [
+            "POST /gateways/FakeGWToken_abc123/verify.json",
+            { data: fakeTransaction({ transaction_type: "Verification" }) },
+          ],
+        ]),
       );
       const tool = findTool("spreedly_gateway_verify");
       await tool.handler(
-        { gateway_token: "FakeGWToken_abc123", payment_method_token: "FakePMToken_pm001", currency_code: "USD" },
+        {
+          gateway_token: "FakeGWToken_abc123",
+          payment_method_token: "FakePMToken_pm001",
+          currency_code: "USD",
+        },
         { transport },
       );
       expect(calls[0].method).toBe("POST");
@@ -150,25 +194,42 @@ describe("gateway tools", () => {
   describe("spreedly_gateway_store", () => {
     it("stores a payment method", async () => {
       const { transport, calls } = createMockTransport(
-        new Map([["POST /gateways/FakeGWToken_abc123/store.json", { data: fakeTransaction({ transaction_type: "Store" }) }]]),
+        new Map([
+          [
+            "POST /gateways/FakeGWToken_abc123/store.json",
+            { data: fakeTransaction({ transaction_type: "Store" }) },
+          ],
+        ]),
       );
       const tool = findTool("spreedly_gateway_store");
       await tool.handler(
         { gateway_token: "FakeGWToken_abc123", payment_method_token: "FakePMToken_pm001" },
         { transport },
       );
-      expect(calls[0].options?.body).toEqual({ transaction: { payment_method_token: "FakePMToken_pm001" } });
+      expect(calls[0].options?.body).toEqual({
+        transaction: { payment_method_token: "FakePMToken_pm001" },
+      });
     });
   });
 
   describe("spreedly_gateway_general_credit", () => {
     it("issues a general credit", async () => {
       const { transport, calls } = createMockTransport(
-        new Map([["POST /gateways/FakeGWToken_abc123/general_credit.json", { data: fakeTransaction({ transaction_type: "Credit" }) }]]),
+        new Map([
+          [
+            "POST /gateways/FakeGWToken_abc123/general_credit.json",
+            { data: fakeTransaction({ transaction_type: "Credit" }) },
+          ],
+        ]),
       );
       const tool = findTool("spreedly_gateway_general_credit");
       await tool.handler(
-        { gateway_token: "FakeGWToken_abc123", payment_method_token: "FakePMToken_pm001", amount: 500, currency_code: "USD" },
+        {
+          gateway_token: "FakeGWToken_abc123",
+          payment_method_token: "FakePMToken_pm001",
+          amount: 500,
+          currency_code: "USD",
+        },
         { transport },
       );
       expect(calls[0].method).toBe("POST");

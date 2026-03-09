@@ -11,27 +11,38 @@ function findTool(name: string) {
 
 describe("certificate tools", () => {
   it("creates a certificate", async () => {
-    const { transport, calls } = createMockTransport(new Map([["POST /certificates.json", { data: fakeCertificate() }]]));
+    const { transport, calls } = createMockTransport(
+      new Map([["POST /certificates.json", { data: fakeCertificate() }]]),
+    );
     await findTool("spreedly_certificate_create").handler({}, { transport });
     expect(calls[0].method).toBe("POST");
   });
 
   it("generates a certificate", async () => {
-    const { transport, calls } = createMockTransport(new Map([["POST /certificates/generate.json", { data: fakeCertificate() }]]));
+    const { transport, calls } = createMockTransport(
+      new Map([["POST /certificates/generate.json", { data: fakeCertificate() }]]),
+    );
     await findTool("spreedly_certificate_generate").handler({}, { transport });
     expect(calls[0].method).toBe("POST");
   });
 
   it("lists certificates", async () => {
     const list = { certificates: [fakeCertificate().certificate] };
-    const { transport } = createMockTransport(new Map([["GET /certificates.json", { data: list }]]));
+    const { transport } = createMockTransport(
+      new Map([["GET /certificates.json", { data: list }]]),
+    );
     const result = await findTool("spreedly_certificate_list").handler({}, { transport });
     expect(result).toEqual(list);
   });
 
   it("updates a certificate", async () => {
-    const { transport, calls } = createMockTransport(new Map([["PUT /certificates/FakeCertToken_cert001.json", { data: fakeCertificate() }]]));
-    await findTool("spreedly_certificate_update").handler({ certificate_token: "FakeCertToken_cert001", certificate: { pem: "new-pem" } }, { transport });
+    const { transport, calls } = createMockTransport(
+      new Map([["PUT /certificates/FakeCertToken_cert001.json", { data: fakeCertificate() }]]),
+    );
+    await findTool("spreedly_certificate_update").handler(
+      { certificate_token: "FakeCertToken_cert001", certificate: { pem: "new-pem" } },
+      { transport },
+    );
     expect(calls[0].method).toBe("PUT");
   });
 
