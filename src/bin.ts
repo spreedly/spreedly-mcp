@@ -34,7 +34,7 @@ async function main() {
   );
 
   const transport = createTransport(environmentKey, accessSecret);
-  const server = createServer(transport, policy);
+  const server = createServer(transport, policy, { environmentKey });
 
   const stdioTransport = new StdioServerTransport();
   await server.connect(stdioTransport);
