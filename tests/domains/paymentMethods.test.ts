@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { paymentMethodTools } from "../../src/domains/paymentMethods/tools.js";
+import { UpdateGratisSchema } from "../../src/domains/paymentMethods/schemas.js";
 import { createMockTransport } from "../helpers/transport.js";
 import {
   fakePaymentMethod,
@@ -123,6 +124,33 @@ describe("payment method tools", () => {
         { transport },
       );
       expect(result).toEqual(events);
+    });
+  });
+
+  describe("UpdateGratisSchema", () => {
+    it("accepts boolean-only update_gratis fields", () => {
+      const result = UpdateGratisSchema.safeParse({
+        payment_method_token: "FakePMToken_pm001",
+        payment_method: {
+          managed: true,
+          eligible_for_card_updater: false,
+          allow_blank_name: true,
+        },
+      });
+
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects non-boolean values for update_gratis flags", () => {
+      const result = UpdateGratisSchema.safeParse({
+        payment_method_token: "FakePMToken_pm001",
+        payment_method: {
+          managed: "true",
+          allow_blank_date: 1,
+        },
+      });
+
+      expect(result.success).toBe(false);
     });
   });
 
