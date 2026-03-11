@@ -1,3 +1,9 @@
+import type { ZodTypeAny } from "zod";
+import type { ToolAnnotations } from "@modelcontextprotocol/sdk/spec.types.js";
+import type { SpreedlyTransport } from "../transport/types.js";
+
+export type { ToolAnnotations };
+
 export interface PaginationParams {
   since_token?: string;
   order?: "asc" | "desc";
@@ -83,9 +89,10 @@ export interface SpreedlyEvent {
 export interface ToolDefinition {
   name: string;
   description: string;
-  schema: Record<string, import("zod").ZodTypeAny>;
+  schema: Record<string, ZodTypeAny>;
+  annotations?: ToolAnnotations;
   handler: (
     params: Record<string, unknown>,
-    ctx: { transport: import("../transport/types.js").SpreedlyTransport },
+    ctx: { transport: SpreedlyTransport },
   ) => Promise<unknown>;
 }

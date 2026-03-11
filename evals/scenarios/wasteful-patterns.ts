@@ -1,5 +1,5 @@
 import type { Scenario } from "../lib/types.js";
-import type { MockResponseFn, MockResponseValue } from "../../tests/helpers/transport.js";
+import type { MockResponseValue } from "../../tests/helpers/transport.js";
 import {
   toolCalled,
   toolCalledWith,
@@ -9,22 +9,7 @@ import {
   argumentSameAcrossCalls,
   pausedForInput,
 } from "../lib/graders.js";
-import { fakeGateway, fakeTransaction } from "../../tests/helpers/fixtures.js";
-
-const echoPurchase: MockResponseFn = (_method, path, options) => {
-  const body = options?.body as { transaction?: Record<string, unknown> } | undefined;
-  const txn = body?.transaction ?? {};
-  const gatewayToken = path.split("/")[2] ?? "unknown";
-  return {
-    data: fakeTransaction({
-      transaction_type: "Purchase",
-      gateway_token: gatewayToken,
-      payment_method_token: txn.payment_method_token,
-      amount: txn.amount,
-      currency_code: txn.currency_code,
-    }),
-  };
-};
+import { echo, gatewayList, gatewayCreate } from "../lib/mock-responders.js";
 
 export const listBeforeCreateGateway: Scenario = {
   name: "List gateways before creating when one exists",
@@ -40,35 +25,23 @@ export const listBeforeCreateGateway: Scenario = {
   mockResponses: new Map<string, MockResponseValue>([
     [
       "GET /gateways.json",
-      {
-        data: {
-          gateways: [
-            fakeGateway({
-              token: "GW_existing_stripe",
-              gateway_type: "stripe",
-              name: "Stripe Production",
-            }).gateway,
-          ],
-        },
-      },
+      gatewayList({
+        token: "GW_existing_stripe",
+        gateway_type: "stripe",
+        name: "Stripe Production",
+      }),
     ],
     [
       "POST /gateways.json",
-      {
-        data: fakeGateway({
-          token: "GW_new_stripe",
-          gateway_type: "stripe",
-          name: "Stripe New",
-        }),
-      },
+      gatewayCreate({ token: "GW_new_stripe", gateway_type: "stripe", name: "Stripe New" }),
     ],
-    ["POST /gateways/*/purchase.json", echoPurchase],
+    ["POST /gateways/*/purchase.json", echo.purchase()],
   ]),
 
   messages: [
     {
       role: "user",
-      content: "Process a $50 USD purchase on PM_customer_a using a Stripe gateway.",
+      content: "Process a $50 USD purchase on payment method PM_customer_a using a Stripe gateway.",
     },
   ],
 
@@ -94,27 +67,17 @@ export const noRepeatedGatewayCreation: Scenario = {
   mockResponses: new Map<string, MockResponseValue>([
     [
       "GET /gateways.json",
-      {
-        data: {
-          gateways: [
-            fakeGateway({
-              token: "GW_stripe",
-              gateway_type: "stripe",
-              name: "Stripe",
-            }).gateway,
-          ],
-        },
-      },
+      gatewayList({ token: "GW_stripe", gateway_type: "stripe", name: "Stripe" }),
     ],
-    ["POST /gateways.json", { data: fakeGateway({ token: "GW_new" }) }],
-    ["POST /gateways/*/purchase.json", echoPurchase],
+    ["POST /gateways.json", gatewayCreate({ token: "GW_new" })],
+    ["POST /gateways/*/purchase.json", echo.purchase()],
   ]),
 
   messages: [
     {
       role: "user",
       content:
-        "Process 3 purchases through a Stripe gateway: $10 on PM_a, $20 on PM_b, and $30 on PM_c. All USD.",
+        "Process 3 purchases through a Stripe gateway: $10 on payment method 4bf2-d91a-7c3e0f-1001a, $20 on payment method 4bf2-d91a-7c3e0f-1001b, and $30 on payment method 4bf2-d91a-7c3e0f-1001c. All USD.",
     },
   ],
 
@@ -140,21 +103,15 @@ export const findExistingSandboxGateway: Scenario = {
   mockResponses: new Map<string, MockResponseValue>([
     [
       "GET /gateways.json",
-      {
-        data: {
-          gateways: [
-            fakeGateway({
-              token: "GW_stripe_sandbox",
-              gateway_type: "stripe",
-              name: "Stripe Sandbox",
-            }).gateway,
-          ],
-        },
-      },
+      gatewayList({
+        token: "GW_stripe_sandbox",
+        gateway_type: "stripe",
+        name: "Stripe Sandbox",
+      }),
     ],
     [
       "POST /gateways.json",
-      { data: fakeGateway({ token: "GW_new_stripe", gateway_type: "stripe" }) },
+      gatewayCreate({ token: "GW_new_stripe", gateway_type: "stripe" }),
     ],
   ]),
 
@@ -183,26 +140,14 @@ export const clarifyAmbiguousGateway: Scenario = {
   mockResponses: new Map<string, MockResponseValue>([
     [
       "GET /gateways.json",
-      {
-        data: {
-          gateways: [
-            fakeGateway({
-              token: "GW_stripe_sandbox",
-              gateway_type: "stripe",
-              name: "Stripe Sandbox",
-            }).gateway,
-            fakeGateway({
-              token: "GW_stripe_production",
-              gateway_type: "stripe",
-              name: "Stripe Production",
-            }).gateway,
-          ],
-        },
-      },
+      gatewayList(
+        { token: "GW_stripe_sandbox", gateway_type: "stripe", name: "Stripe Sandbox" },
+        { token: "GW_stripe_production", gateway_type: "stripe", name: "Stripe Production" },
+      ),
     ],
     [
       "POST /gateways.json",
-      { data: fakeGateway({ token: "GW_new_stripe", gateway_type: "stripe" }) },
+      gatewayCreate({ token: "GW_new_stripe", gateway_type: "stripe" }),
     ],
   ]),
 

@@ -285,30 +285,28 @@ describe("getEnabledCategories", () => {
   });
 });
 
-describe("enriched description content", () => {
-  it("every transaction_initiation tool description contains [Transaction] guidance", () => {
+describe("category toggle tags", () => {
+  it("every transaction_initiation tool description contains toggle tag", () => {
     const txnTools = allTools.filter((t) => getToolCategory(t.name) === "transaction_initiation");
     expect(txnTools.length).toBeGreaterThan(0);
 
     for (const tool of txnTools) {
       const desc = getToolDescription(tool);
-      expect(desc).toContain("[Transaction]");
-      expect(desc).toContain("verify it is the right resource");
+      expect(desc).toContain("[Enabled by TRANSACTION_INITIATION_ENABLED=true]");
     }
   });
 
-  it("every administrative tool description contains [Configuration] guidance", () => {
+  it("every administrative tool description contains toggle tag", () => {
     const adminTools = allTools.filter((t) => getToolCategory(t.name) === "administrative");
     expect(adminTools.length).toBeGreaterThan(0);
 
     for (const tool of adminTools) {
       const desc = getToolDescription(tool);
-      expect(desc).toContain("[Configuration]");
-      expect(desc).toContain("check for existing resources before creating");
+      expect(desc).toContain("[Enabled by ADMINISTRATIVE_ENABLED=true]");
     }
   });
 
-  it("every payment_method_tokenization tool description contains [Tokenization] guidance", () => {
+  it("every payment_method_tokenization tool description contains toggle tag", () => {
     const tokenTools = allTools.filter(
       (t) => getToolCategory(t.name) === "payment_method_tokenization",
     );
@@ -316,11 +314,22 @@ describe("enriched description content", () => {
 
     for (const tool of tokenTools) {
       const desc = getToolDescription(tool);
-      expect(desc).toContain("[Tokenization]");
-      expect(desc).toContain("sensitive card data");
+      expect(desc).toContain("[Enabled by PAYMENT_METHOD_TOKENIZATION_ENABLED=true]");
     }
   });
 
+  it("always_enabled tool descriptions do NOT contain toggle tags", () => {
+    const enabledTools = allTools.filter((t) => getToolCategory(t.name) === "always_enabled");
+    expect(enabledTools.length).toBeGreaterThan(0);
+
+    for (const tool of enabledTools) {
+      const desc = getToolDescription(tool);
+      expect(desc).not.toContain("[Enabled by");
+    }
+  });
+});
+
+describe("per-tool behavioral guidance", () => {
   it("spreedly_gateway_create description mentions spreedly_gateway_list", () => {
     const tool = allTools.find((t) => t.name === "spreedly_gateway_create");
     expect(tool).toBeDefined();
@@ -328,17 +337,96 @@ describe("enriched description content", () => {
     expect(desc).toContain("spreedly_gateway_list");
   });
 
-  it("always_enabled tool descriptions are NOT enriched with category guidance", () => {
-    const enabledTools = allTools.filter((t) => getToolCategory(t.name) === "always_enabled");
-    expect(enabledTools.length).toBeGreaterThan(0);
+  const financialTools = [
+    "spreedly_gateway_authorize",
+    "spreedly_gateway_purchase",
+    "spreedly_gateway_general_credit",
+  ];
 
-    for (const tool of enabledTools) {
-      const desc = getToolDescription(tool);
-      expect(desc).not.toContain("[Configuration]");
-      expect(desc).not.toContain("[Transaction]");
-      expect(desc).not.toContain("[Tokenization]");
+  for (const toolName of financialTools) {
+    it(`${toolName} description contains immutability guidance`, () => {
+      const tool = allTools.find((t) => t.name === toolName);
+      expect(tool).toBeDefined();
+      expect(tool!.description).toContain("immutable");
+      expect(tool!.description).toContain("Never retry with altered financial parameters");
+    });
+  }
+
+  const followUpFinancialTools = [
+    "spreedly_transaction_capture",
+    "spreedly_transaction_credit",
+  ];
+
+  for (const toolName of followUpFinancialTools) {
+    it(`${toolName} description contains amount immutability guidance`, () => {
+      const tool = allTools.find((t) => t.name === toolName);
+      expect(tool).toBeDefined();
+      expect(tool!.description).toContain("immutable");
+      expect(tool!.description).toContain("never retry with a different amount");
+    });
+  }
+
+  it("spreedly_transaction_void description mentions irreversible", () => {
+    const tool = allTools.find((t) => t.name === "spreedly_transaction_void");
+    expect(tool).toBeDefined();
+    expect(tool!.description).toContain("irreversible");
+    expect(tool!.description).toContain("report the error to the operator");
+  });
+
+  it("spreedly_payment_method_create description mentions sensitive card data", () => {
+    const tool = allTools.find((t) => t.name === "spreedly_payment_method_create");
+    expect(tool).toBeDefined();
+    expect(tool!.description).toContain("sensitive card data");
+  });
+});
+
+describe("tool annotations", () => {
+  it("every tool in allTools has annotations", () => {
+    for (const tool of allTools) {
+      expect(tool.annotations).toBeDefined();
     }
   });
+
+  const readOnlyToolPatterns = ["_list", "_show", "_transcript"];
+
+  it("all list/show/transcript tools have readOnlyHint: true", () => {
+    const readOnlyTools = allTools.filter((t) =>
+      readOnlyToolPatterns.some((p) => t.name.includes(p)),
+    );
+    expect(readOnlyTools.length).toBeGreaterThan(0);
+
+    for (const tool of readOnlyTools) {
+      expect(tool.annotations?.readOnlyHint).toBe(true);
+    }
+  });
+
+  const destructiveToolNames = [
+    "spreedly_gateway_authorize",
+    "spreedly_gateway_purchase",
+    "spreedly_gateway_general_credit",
+    "spreedly_transaction_capture",
+    "spreedly_transaction_void",
+    "spreedly_transaction_credit",
+  ];
+
+  for (const toolName of destructiveToolNames) {
+    it(`${toolName} has destructiveHint: true and idempotentHint: false`, () => {
+      const tool = allTools.find((t) => t.name === toolName);
+      expect(tool).toBeDefined();
+      expect(tool!.annotations?.destructiveHint).toBe(true);
+      expect(tool!.annotations?.idempotentHint).toBe(false);
+    });
+  }
+
+  const safeToolNames = ["spreedly_gateway_verify", "spreedly_gateway_store"];
+
+  for (const toolName of safeToolNames) {
+    it(`${toolName} does NOT have destructiveHint: true`, () => {
+      const tool = allTools.find((t) => t.name === toolName);
+      expect(tool).toBeDefined();
+      expect(tool!.annotations?.destructiveHint).not.toBe(true);
+    });
+  }
 });
 
 describe("complete tool coverage", () => {

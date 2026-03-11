@@ -22,7 +22,9 @@ export function wrapHandler<TParams extends Record<string, unknown>>(
   toolName: string,
   handler: ToolHandler<TParams, unknown>,
   validate: (raw: unknown) => TParams,
+  options?: { silent?: boolean },
 ): (raw: unknown, ctx: ToolContext) => Promise<McpToolResult> {
+  const audit = !options?.silent;
   return async (raw: unknown, ctx: ToolContext): Promise<McpToolResult> => {
     const startTime = Date.now();
     const { transport: tracked, getHttpContext } = withHttpTracking(ctx.transport);
@@ -32,17 +34,19 @@ export function wrapHandler<TParams extends Record<string, unknown>>(
       const validated = validate(sanitized);
       const result = await handler(validated, { ...ctx, transport: tracked });
       const text = typeof result === "string" ? result : JSON.stringify(result, null, 2);
-      emitAuditEvent(toolName, ctx.environmentKey, startTime, undefined, getHttpContext());
+      if (audit) emitAuditEvent(toolName, ctx.environmentKey, startTime, undefined, getHttpContext());
       return { content: [{ type: "text", text }] };
     } catch (error) {
-      const ctx_ = getHttpContext();
-      if (!ctx_.requestId && error instanceof SpreedlyError && error.requestId) {
-        ctx_.requestId = error.requestId;
+      if (audit) {
+        const ctx_ = getHttpContext();
+        if (!ctx_.requestId && error instanceof SpreedlyError && error.requestId) {
+          ctx_.requestId = error.requestId;
+        }
+        if (ctx_.httpStatusCode === undefined && error instanceof SpreedlyError) {
+          ctx_.httpStatusCode = error.statusCode;
+        }
+        emitAuditEvent(toolName, ctx.environmentKey, startTime, error, ctx_);
       }
-      if (ctx_.httpStatusCode === undefined && error instanceof SpreedlyError) {
-        ctx_.httpStatusCode = error.statusCode;
-      }
-      emitAuditEvent(toolName, ctx.environmentKey, startTime, error, ctx_);
       return formatError(error);
     }
   };
