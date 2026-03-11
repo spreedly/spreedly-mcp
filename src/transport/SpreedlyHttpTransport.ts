@@ -36,7 +36,7 @@ export function createTransport(
         Authorization: authHeader,
         Accept: "application/json",
         "Content-Type": "application/json",
-        "User-Agent": `Spreedly/MCP v${version}`
+        "User-Agent": `Spreedly/MCP v${version}`,
       };
 
       const fetchOptions: globalThis.RequestInit = {
