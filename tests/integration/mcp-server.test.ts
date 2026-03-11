@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { createMcpHarness, type McpHarness } from "../helpers/mcp-harness.js";
 import { SERVER_INSTRUCTIONS } from "../../src/server.js";
-import { fakeGateway, fakeTransaction, fakeGatewayList } from "../helpers/fixtures.js";
+import { fakeTransaction, fakeGatewayList } from "../helpers/fixtures.js";
 import type { ToolPolicyConfig } from "../../src/security/toolPolicy.js";
 import type { MockResponseValue } from "../helpers/transport.js";
 
