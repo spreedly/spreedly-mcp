@@ -123,16 +123,17 @@ export const UpdateGratisSchema = z
     payment_method_token: z.string().describe("The token of the payment method"),
     payment_method: z
       .object({
-        first_name: z.string().optional(),
-        last_name: z.string().optional(),
-        number: z
-          .string()
+        managed: z.boolean().optional().describe("Whether the payment method is managed"),
+        eligible_for_card_updater: z.boolean().optional().describe("Include in Account Updater"),
+        not_eligible_for_card_updater: z
+          .boolean()
           .optional()
-          .describe("Updated card number (PAN) - sensitive cardholder data"),
-        month: z.number().int().min(1).max(12).optional(),
-        year: z.number().int().optional(),
+          .describe("Exclude from Account Updater"),
+        allow_blank_name: z.boolean().optional().describe("Skip name validation requirement"),
+        allow_expired_date: z.boolean().optional().describe("Skip expired date validation"),
+        allow_blank_date: z.boolean().optional().describe("Skip expiration date validation"),
       })
-      .describe("Fields to update"),
+      .describe("Fields to update (boolean flags only)"),
   })
   .strict();
 
