@@ -6,7 +6,6 @@ import {
   ShowPaymentMethodSchema,
   UpdatePaymentMethodSchema,
   RetainPaymentMethodSchema,
-  RedactPaymentMethodSchema,
   RecachePaymentMethodSchema,
   ListPaymentMethodTransactionsSchema,
   ListPaymentMethodEventsSchema,
@@ -77,19 +76,6 @@ export const paymentMethodTools: ToolDefinition[] = [
       const res = await transport.request(
         "PUT",
         `/payment_methods/${payment_method_token}/retain.json`,
-      );
-      return res.data;
-    },
-  },
-  {
-    name: "spreedly_payment_method_redact",
-    description: TOOL_DESCRIPTIONS.spreedly_payment_method_redact,
-    schema: RedactPaymentMethodSchema.shape,
-    handler: async (params, { transport }) => {
-      const { payment_method_token } = params as { payment_method_token: string };
-      const res = await transport.request(
-        "PUT",
-        `/payment_methods/${payment_method_token}/redact.json`,
       );
       return res.data;
     },

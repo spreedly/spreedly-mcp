@@ -5,11 +5,6 @@ import {
   ListEnvironmentsSchema,
   ShowEnvironmentSchema,
   UpdateEnvironmentSchema,
-  CreateAccessSecretSchema,
-  ListAccessSecretsSchema,
-  ShowAccessSecretSchema,
-  DeleteAccessSecretSchema,
-  RegenerateSigningSecretSchema,
 } from "./schemas.js";
 
 function buildQuery(params: Record<string, string | undefined>): string {
@@ -61,77 +56,6 @@ export const environmentTools: ToolDefinition[] = [
       const res = await transport.request("PUT", `/environments/${environment_key}.json`, {
         body: { environment },
       });
-      return res.data;
-    },
-  },
-  {
-    name: "spreedly_environment_create_access_secret",
-    description: TOOL_DESCRIPTIONS.spreedly_environment_create_access_secret,
-    schema: CreateAccessSecretSchema.shape,
-    handler: async (params, { transport }) => {
-      const { environment_key } = params as { environment_key: string };
-      const res = await transport.request(
-        "POST",
-        `/environments/${environment_key}/access_secrets.json`,
-      );
-      return res.data;
-    },
-  },
-  {
-    name: "spreedly_environment_list_access_secrets",
-    description: TOOL_DESCRIPTIONS.spreedly_environment_list_access_secrets,
-    schema: ListAccessSecretsSchema.shape,
-    handler: async (params, { transport }) => {
-      const { environment_key } = params as { environment_key: string };
-      const res = await transport.request(
-        "GET",
-        `/environments/${environment_key}/access_secrets.json`,
-      );
-      return res.data;
-    },
-  },
-  {
-    name: "spreedly_environment_show_access_secret",
-    description: TOOL_DESCRIPTIONS.spreedly_environment_show_access_secret,
-    schema: ShowAccessSecretSchema.shape,
-    handler: async (params, { transport }) => {
-      const { environment_key, access_secret_key } = params as {
-        environment_key: string;
-        access_secret_key: string;
-      };
-      const res = await transport.request(
-        "GET",
-        `/environments/${environment_key}/access_secrets/${access_secret_key}.json`,
-      );
-      return res.data;
-    },
-  },
-  {
-    name: "spreedly_environment_delete_access_secret",
-    description: TOOL_DESCRIPTIONS.spreedly_environment_delete_access_secret,
-    schema: DeleteAccessSecretSchema.shape,
-    handler: async (params, { transport }) => {
-      const { environment_key, access_secret_key } = params as {
-        environment_key: string;
-        access_secret_key: string;
-      };
-      const res = await transport.request(
-        "DELETE",
-        `/environments/${environment_key}/access_secrets/${access_secret_key}.json`,
-      );
-      return res.data;
-    },
-  },
-  {
-    name: "spreedly_environment_regenerate_signing_secret",
-    description: TOOL_DESCRIPTIONS.spreedly_environment_regenerate_signing_secret,
-    schema: RegenerateSigningSecretSchema.shape,
-    handler: async (params, { transport }) => {
-      const { environment_key } = params as { environment_key: string };
-      const res = await transport.request(
-        "POST",
-        `/environments/${environment_key}/regenerate_signing_secret.json`,
-      );
       return res.data;
     },
   },

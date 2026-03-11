@@ -5,7 +5,6 @@ import {
   ListGatewaysSchema,
   ShowGatewaySchema,
   UpdateGatewaySchema,
-  RedactGatewaySchema,
   RetainGatewaySchema,
   ListGatewayTransactionsSchema,
   GatewayAuthorizeSchema,
@@ -62,16 +61,6 @@ export const gatewayTools: ToolDefinition[] = [
       };
       const body = { gateway: { ...credentials } };
       const res = await transport.request("PUT", `/gateways/${gateway_token}.json`, { body });
-      return res.data;
-    },
-  },
-  {
-    name: "spreedly_gateway_redact",
-    description: TOOL_DESCRIPTIONS.spreedly_gateway_redact,
-    schema: RedactGatewaySchema.shape,
-    handler: async (params, { transport }) => {
-      const { gateway_token } = params as { gateway_token: string };
-      const res = await transport.request("PUT", `/gateways/${gateway_token}/redact.json`);
       return res.data;
     },
   },

@@ -70,45 +70,6 @@ export const TranscriptTransactionSchema = z
   })
   .strict();
 
-export const AuthorizeWorkflowSchema = z
-  .object({
-    payment_method_token: z.string().describe("The token of the payment method"),
-    amount: z.number().int().positive().describe("Amount in cents"),
-    currency_code: z.string().length(3).describe("ISO 4217 currency code"),
-    retain_on_success: z
-      .boolean()
-      .optional()
-      .describe("Whether to retain the payment method on success"),
-    order_id: z.string().optional().describe("Merchant order identifier"),
-    description: z.string().optional().describe("Transaction description"),
-  })
-  .strict();
-
-export const PurchaseWorkflowSchema = z
-  .object({
-    payment_method_token: z.string().describe("The token of the payment method"),
-    amount: z.number().int().positive().describe("Amount in cents"),
-    currency_code: z.string().length(3).describe("ISO 4217 currency code"),
-    retain_on_success: z
-      .boolean()
-      .optional()
-      .describe("Whether to retain the payment method on success"),
-    order_id: z.string().optional().describe("Merchant order identifier"),
-    description: z.string().optional().describe("Transaction description"),
-  })
-  .strict();
-
-export const VerifyWorkflowSchema = z
-  .object({
-    payment_method_token: z.string().describe("The token of the payment method"),
-    currency_code: z.string().length(3).describe("ISO 4217 currency code"),
-    retain_on_success: z
-      .boolean()
-      .optional()
-      .describe("Whether to retain the payment method on success"),
-  })
-  .strict();
-
 export const PurchaseReferenceSchema = z
   .object({
     transaction_token: z.string().describe("The token of the prior transaction to reference"),

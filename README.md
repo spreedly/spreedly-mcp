@@ -71,44 +71,101 @@ Edit `.vscode/mcp.json`:
 
 For details, see [Spreedly Credentials Documentation](https://docs.spreedly.com/basics/credentials/).
 
+## Tool Access Policy
+
+The server controls which tools are available through three environment variable flags. **All default to `false`** -- only read-only tools are available out of the box. Enable the categories you need:
+
+| Variable                              | Default | What it enables                                                                                         |
+| ------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------- |
+| `PAYMENT_METHOD_TOKENIZATION_ENABLED` | `false` | Creating and recaching payment methods (sends PAN/CVV data)                                             |
+| `TRANSACTION_INITIATION_ENABLED`      | `false` | Authorizing, purchasing, capturing, voiding, refunding, and other third-party actions                   |
+| `ADMINISTRATIVE_ENABLED`              | `false` | Creating/updating gateways, environments, certificates, merchant profiles, SCA providers, sub-merchants |
+
+### Recommended Configuration Profiles
+
+**Read-only / monitoring** (default -- no flags needed):
+
+```json
+"env": {
+  "SPREEDLY_ENVIRONMENT_KEY": "<your-environment-key>",
+  "SPREEDLY_ACCESS_SECRET": "<your-access-secret>"
+}
+```
+
+Only list/show tools are available. Good for dashboards, reporting, and investigating transactions.
+
+**Transaction processing** (recommended for AI-assisted payments):
+
+```json
+"env": {
+  "SPREEDLY_ENVIRONMENT_KEY": "<your-environment-key>",
+  "SPREEDLY_ACCESS_SECRET": "<your-access-secret>",
+  "TRANSACTION_INITIATION_ENABLED": "true"
+}
+```
+
+Enables authorizing, capturing, voiding, and refunding against existing gateways. Does not allow creating gateways or tokenizing raw card data -- the safest profile for conducting transactions.
+
+**Administrative setup:**
+
+```json
+"env": {
+  "SPREEDLY_ENVIRONMENT_KEY": "<your-environment-key>",
+  "SPREEDLY_ACCESS_SECRET": "<your-access-secret>",
+  "ADMINISTRATIVE_ENABLED": "true"
+}
+```
+
+For initial environment setup -- creating gateways, merchant profiles, SCA providers. Disable once configuration is complete.
+
+**Full access:**
+
+```json
+"env": {
+  "SPREEDLY_ENVIRONMENT_KEY": "<your-environment-key>",
+  "SPREEDLY_ACCESS_SECRET": "<your-access-secret>",
+  "PAYMENT_METHOD_TOKENIZATION_ENABLED": "true",
+  "TRANSACTION_INITIATION_ENABLED": "true",
+  "ADMINISTRATIVE_ENABLED": "true"
+}
+```
+
+All tool categories enabled. Use only in controlled environments or during initial setup.
+
 ## Available Tools
 
-### Gateways (13 tools)
+### Gateways (12 tools)
 
-| Tool                                 | Description                            |
-| ------------------------------------ | -------------------------------------- |
-| `spreedly_gateway_create`            | Create a new gateway connection        |
-| `spreedly_gateway_list`              | List all gateways                      |
-| `spreedly_gateway_show`              | Get gateway details                    |
-| `spreedly_gateway_update`            | Update gateway configuration           |
-| `spreedly_gateway_redact`            | Permanently remove gateway credentials |
-| `spreedly_gateway_retain`            | Mark gateway for retention             |
-| `spreedly_gateway_list_supported`    | List all supported gateway types       |
-| `spreedly_gateway_list_transactions` | List transactions for a gateway        |
-| `spreedly_gateway_authorize`         | Authorize a payment (hold funds)       |
-| `spreedly_gateway_purchase`          | Authorize and capture in one step      |
-| `spreedly_gateway_verify`            | Verify a payment method                |
-| `spreedly_gateway_store`             | Store a payment method at a gateway    |
-| `spreedly_gateway_general_credit`    | Issue a non-referenced credit          |
+| Tool                                 | Description                         |
+| ------------------------------------ | ----------------------------------- |
+| `spreedly_gateway_create`            | Create a new gateway connection     |
+| `spreedly_gateway_list`              | List all gateways                   |
+| `spreedly_gateway_show`              | Get gateway details                 |
+| `spreedly_gateway_update`            | Update gateway configuration        |
+| `spreedly_gateway_retain`            | Mark gateway for retention          |
+| `spreedly_gateway_list_supported`    | List all supported gateway types    |
+| `spreedly_gateway_list_transactions` | List transactions for a gateway     |
+| `spreedly_gateway_authorize`         | Authorize a payment (hold funds)    |
+| `spreedly_gateway_purchase`          | Authorize and capture in one step   |
+| `spreedly_gateway_verify`            | Verify a payment method             |
+| `spreedly_gateway_store`             | Store a payment method at a gateway |
+| `spreedly_gateway_general_credit`    | Issue a non-referenced credit       |
 
-### Transactions (12 tools)
+### Transactions (9 tools)
 
-| Tool                                      | Description                       |
-| ----------------------------------------- | --------------------------------- |
-| `spreedly_transaction_list`               | List transactions                 |
-| `spreedly_transaction_show`               | Get transaction details           |
-| `spreedly_transaction_update`             | Update transaction metadata       |
-| `spreedly_transaction_capture`            | Capture an authorized transaction |
-| `spreedly_transaction_void`               | Void a transaction                |
-| `spreedly_transaction_credit`             | Refund a transaction              |
-| `spreedly_transaction_complete`           | Complete a pending transaction    |
-| `spreedly_transaction_confirm`            | Confirm a pending transaction     |
-| `spreedly_transaction_transcript`         | Get raw gateway transcript        |
-| `spreedly_transaction_authorize_workflow` | Authorize via workflows           |
-| `spreedly_transaction_purchase_workflow`  | Purchase via workflows            |
-| `spreedly_transaction_verify_workflow`    | Verify via workflows              |
+| Tool                              | Description                       |
+| --------------------------------- | --------------------------------- |
+| `spreedly_transaction_list`       | List transactions                 |
+| `spreedly_transaction_show`       | Get transaction details           |
+| `spreedly_transaction_update`     | Update transaction metadata       |
+| `spreedly_transaction_capture`    | Capture an authorized transaction |
+| `spreedly_transaction_void`       | Void a transaction                |
+| `spreedly_transaction_credit`     | Refund a transaction              |
+| `spreedly_transaction_complete`   | Complete a pending transaction    |
+| `spreedly_transaction_confirm`    | Confirm a pending transaction     |
+| `spreedly_transaction_transcript` | Get raw gateway transcript        |
 
-### Payment Methods (13 tools)
+### Payment Methods (12 tools)
 
 | Tool                                        | Description                            |
 | ------------------------------------------- | -------------------------------------- |
@@ -117,7 +174,6 @@ For details, see [Spreedly Credentials Documentation](https://docs.spreedly.com/
 | `spreedly_payment_method_show`              | Get payment method details             |
 | `spreedly_payment_method_update`            | Update payment method metadata         |
 | `spreedly_payment_method_retain`            | Retain a payment method                |
-| `spreedly_payment_method_redact`            | Redact a payment method                |
 | `spreedly_payment_method_recache`           | Recache CVV                            |
 | `spreedly_payment_method_list_transactions` | List transactions for a payment method |
 | `spreedly_payment_method_list_events`       | List events for a payment method       |
@@ -126,17 +182,13 @@ For details, see [Spreedly Credentials Documentation](https://docs.spreedly.com/
 | `spreedly_payment_method_show_event`        | Show a payment method event            |
 | `spreedly_payment_method_list_all_events`   | List all payment method events         |
 
-### Receivers (8 tools)
-
-`spreedly_receiver_list_supported`, `spreedly_receiver_create`, `spreedly_receiver_list`, `spreedly_receiver_show`, `spreedly_receiver_update`, `spreedly_receiver_redact`, `spreedly_receiver_deliver`, `spreedly_receiver_export`
-
 ### Certificates (4 tools)
 
 `spreedly_certificate_create`, `spreedly_certificate_generate`, `spreedly_certificate_list`, `spreedly_certificate_update`
 
-### Environments (9 tools)
+### Environments (4 tools)
 
-`spreedly_environment_create`, `spreedly_environment_list`, `spreedly_environment_show`, `spreedly_environment_update`, `spreedly_environment_create_access_secret`, `spreedly_environment_list_access_secrets`, `spreedly_environment_show_access_secret`, `spreedly_environment_delete_access_secret`, `spreedly_environment_regenerate_signing_secret`
+`spreedly_environment_create`, `spreedly_environment_list`, `spreedly_environment_show`, `spreedly_environment_update`
 
 ### Merchant Profiles (4 tools)
 

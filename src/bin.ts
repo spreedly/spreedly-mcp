@@ -1,6 +1,7 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createTransport } from "./transport/SpreedlyHttpTransport.js";
 import { createServer } from "./server.js";
+import { readPolicyFromEnv, getEnabledCategories } from "./security/toolPolicy.js";
 
 async function main() {
   const environmentKey = process.env.SPREEDLY_ENVIRONMENT_KEY;
@@ -26,8 +27,12 @@ async function main() {
     process.exit(1);
   }
 
+  const policy = readPolicyFromEnv();
+  const enabledCategories = getEnabledCategories(policy);
+  console.error(`Spreedly MCP: Tool policy — enabled categories: ${enabledCategories.join(", ")}`);
+
   const transport = createTransport(environmentKey, accessSecret);
-  const server = createServer(transport, { environmentKey });
+  const server = createServer(transport, policy, { environmentKey });
 
   const stdioTransport = new StdioServerTransport();
   await server.connect(stdioTransport);
