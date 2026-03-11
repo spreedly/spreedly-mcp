@@ -42,15 +42,6 @@ export interface SpreedlyPaymentMethod {
   [key: string]: unknown;
 }
 
-export interface SpreedlyReceiver {
-  token: string;
-  receiver_type: string;
-  state: string;
-  created_at: string;
-  updated_at: string;
-  [key: string]: unknown;
-}
-
 export interface SpreedlyCertificate {
   token: string;
   algorithm: string;
@@ -64,12 +55,6 @@ export interface SpreedlyEnvironment {
   name: string;
   created_at: string;
   updated_at: string;
-  [key: string]: unknown;
-}
-
-export interface SpreedlyAccessSecret {
-  token: string;
-  created_at: string;
   [key: string]: unknown;
 }
 
@@ -98,7 +83,7 @@ export interface SpreedlyEvent {
 export interface ToolDefinition {
   name: string;
   description: string;
-  schema: Record<string, unknown>;
+  schema: Record<string, import("zod").ZodTypeAny>;
   handler: (
     params: Record<string, unknown>,
     ctx: { transport: import("../transport/types.js").SpreedlyTransport },

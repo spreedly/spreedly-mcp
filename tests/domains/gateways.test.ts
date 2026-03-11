@@ -67,22 +67,6 @@ describe("gateway tools", () => {
     });
   });
 
-  describe("spreedly_gateway_redact", () => {
-    it("redacts a gateway", async () => {
-      const { transport, calls } = createMockTransport(
-        new Map([
-          [
-            "PUT /gateways/FakeGWToken_abc123/redact.json",
-            { data: fakeGateway({ state: "redacted" }) },
-          ],
-        ]),
-      );
-      const tool = findTool("spreedly_gateway_redact");
-      await tool.handler({ gateway_token: "FakeGWToken_abc123" }, { transport });
-      expect(calls[0].path).toBe("/gateways/FakeGWToken_abc123/redact.json");
-    });
-  });
-
   describe("spreedly_gateway_retain", () => {
     it("retains a gateway", async () => {
       const { transport, calls } = createMockTransport(
@@ -237,7 +221,7 @@ describe("gateway tools", () => {
   });
 
   it("has correct number of tools", () => {
-    expect(gatewayTools.length).toBe(13);
+    expect(gatewayTools.length).toBe(12);
   });
 
   it("all tools have descriptions", () => {

@@ -77,24 +77,6 @@ describe("payment method tools", () => {
     });
   });
 
-  describe("spreedly_payment_method_redact", () => {
-    it("redacts a payment method", async () => {
-      const { transport, calls } = createMockTransport(
-        new Map([
-          [
-            "PUT /payment_methods/FakePMToken_pm001/redact.json",
-            { data: fakePaymentMethod({ storage_state: "redacted" }) },
-          ],
-        ]),
-      );
-      await findTool("spreedly_payment_method_redact").handler(
-        { payment_method_token: "FakePMToken_pm001" },
-        { transport },
-      );
-      expect(calls[0].path).toBe("/payment_methods/FakePMToken_pm001/redact.json");
-    });
-  });
-
   describe("spreedly_payment_method_list_transactions", () => {
     it("lists transactions for a payment method", async () => {
       const { transport } = createMockTransport(
@@ -155,7 +137,7 @@ describe("payment method tools", () => {
   });
 
   it("has correct number of tools", () => {
-    expect(paymentMethodTools.length).toBe(13);
+    expect(paymentMethodTools.length).toBe(12);
   });
 
   it("all tool names follow naming convention", () => {

@@ -28,35 +28,3 @@ export const UpdateEnvironmentSchema = z
     }),
   })
   .strict();
-
-export const CreateAccessSecretSchema = z
-  .object({
-    environment_key: z.string().describe("The key of the environment"),
-  })
-  .strict();
-
-export const ListAccessSecretsSchema = z
-  .object({
-    environment_key: z.string().describe("The key of the environment"),
-  })
-  .strict();
-
-export const ShowAccessSecretSchema = z
-  .object({
-    environment_key: z.string().describe("The key of the environment"),
-    access_secret_key: z.string().describe("The key of the access secret"),
-  })
-  .strict();
-
-export const DeleteAccessSecretSchema = z
-  .object({
-    environment_key: z.string().describe("The key of the environment"),
-    access_secret_key: z.string().describe("The key of the access secret to delete"),
-  })
-  .strict();
-
-export const RegenerateSigningSecretSchema = z
-  .object({
-    environment_key: z.string().describe("The key of the environment"),
-  })
-  .strict();

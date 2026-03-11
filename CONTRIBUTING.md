@@ -151,13 +151,45 @@ npm run lint        # lint with ESLint
 
 Tests use Vitest with mocked HTTP transport, so they don't require Spreedly credentials and don't make real API calls.
 
+## Running Behavioral Evals
+
+Evals are LLM-in-the-loop tests that verify AI agents make correct decisions when using the MCP server (e.g. correct token reuse, respecting tool policies, avoiding wasteful patterns). They use mocked Spreedly responses -- no Spreedly credentials needed -- but do require an OpenAI API key.
+
+Evals are **not** run in CI. Please run them locally before submitting changes that affect `AGENTS.md`, tool descriptions, tool policies, or the tool schemas.
+
+### Setup
+
+```bash
+cp .env.example .env
+# Edit .env and set your OpenAI API key:
+#   OPENAI_API_KEY=sk-...
+```
+
+### Running
+
+```bash
+# Run all scenarios (defaults to gpt-5-nano)
+npm run test:evals
+
+# Run a specific scenario group
+npm run test:evals -- --scenario token-reuse
+npm run test:evals -- --scenario policy-enforcement
+npm run test:evals -- --scenario wasteful-patterns
+
+# Run against all models (gpt-5-nano, gpt-5-mini, gpt-5)
+npm run test:evals -- --matrix
+```
+
+See `evals/README.md` for full details on adding scenarios, available graders, and using alternative LLM providers.
+
 ## Submitting Changes
 
 1. Fork the repository
 2. Create a feature branch from `main`
 3. Write tests for your changes
 4. Ensure all checks pass: `npm test && npm run typecheck && npm run lint`
-5. Submit a pull request with a clear description of the change
+5. If your change affects agent behavior (tool descriptions, `AGENTS.md`, schemas, policies), run `npm run test:evals` and confirm evals pass
+6. Submit a pull request with a clear description of the change
 
 ## Project Structure
 

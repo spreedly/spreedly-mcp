@@ -2,7 +2,6 @@ import type { ToolDefinition } from "../types/shared.js";
 import { gatewayTools } from "./gateways/tools.js";
 import { transactionTools } from "./transactions/tools.js";
 import { paymentMethodTools } from "./paymentMethods/tools.js";
-import { receiverTools } from "./receivers/tools.js";
 import { certificateTools } from "./certificates/tools.js";
 import { environmentTools } from "./environments/tools.js";
 import { merchantProfileTools } from "./merchantProfiles/tools.js";
@@ -17,7 +16,6 @@ export const allTools: ToolDefinition[] = [
   ...gatewayTools,
   ...transactionTools,
   ...paymentMethodTools,
-  ...receiverTools,
   ...certificateTools,
   ...environmentTools,
   ...merchantProfileTools,

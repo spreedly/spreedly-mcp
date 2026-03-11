@@ -11,12 +11,21 @@ export interface MockCall {
   options?: RequestOptions;
 }
 
-export function createMockTransport(
-  responses: Map<
-    string,
-    { data: unknown; status?: number; headers?: Record<string, string> }
-  > = new Map(),
-) {
+export interface MockResponseEntry {
+  data: unknown;
+  status?: number;
+  headers?: Record<string, string>;
+}
+
+export type MockResponseFn = (
+  method: string,
+  path: string,
+  options?: RequestOptions,
+) => MockResponseEntry;
+
+export type MockResponseValue = MockResponseEntry | MockResponseFn;
+
+export function createMockTransport(responses: Map<string, MockResponseValue> = new Map()) {
   const calls: MockCall[] = [];
 
   const transport: SpreedlyTransport = Object.freeze({
@@ -28,23 +37,15 @@ export function createMockTransport(
       calls.push({ method, path, options });
 
       const key = `${method.toUpperCase()} ${path.split("?")[0]}`;
-      const match = responses.get(key);
-      if (!match) {
-        const wildcardKey = findWildcardMatch(method, path, responses);
-        if (wildcardKey) {
-          const wildcardMatch = responses.get(wildcardKey)!;
-          return {
-            data: wildcardMatch.data as T,
-            status: wildcardMatch.status ?? 200,
-            headers: wildcardMatch.headers ?? {},
-          };
-        }
+      const raw = responses.get(key) ?? resolveWildcard(method, path, responses);
+      if (!raw) {
         throw new SpreedlyNotFoundError(`No mock response for ${key}`);
       }
+      const resolved = typeof raw === "function" ? raw(method, path, options) : raw;
       return {
-        data: match.data as T,
-        status: match.status ?? 200,
-        headers: match.headers ?? {},
+        data: resolved.data as T,
+        status: resolved.status ?? 200,
+        headers: resolved.headers ?? {},
       };
     },
   });
@@ -52,19 +53,19 @@ export function createMockTransport(
   return { transport, calls };
 }
 
-function findWildcardMatch(
+function resolveWildcard(
   method: string,
   path: string,
-  responses: Map<string, { data: unknown; status?: number }>,
-): string | undefined {
+  responses: Map<string, MockResponseValue>,
+): MockResponseValue | undefined {
   const upperMethod = method.toUpperCase();
   const basePath = path.split("?")[0];
-  for (const key of responses.keys()) {
+  for (const [key, value] of responses.entries()) {
     const [keyMethod, keyPath] = key.split(" ", 2);
     if (keyMethod !== upperMethod) continue;
     if (keyPath.includes("*")) {
       const pattern = keyPath.replace(/\*/g, "[^/]+");
-      if (new RegExp(`^${pattern}$`).test(basePath)) return key;
+      if (new RegExp(`^${pattern}$`).test(basePath)) return value;
     }
   }
   return undefined;
