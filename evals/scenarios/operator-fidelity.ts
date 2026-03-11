@@ -22,10 +22,7 @@ export const amountPreservedOnValidationError: Scenario = {
   },
 
   mockResponses: new Map<string, MockResponseValue>([
-    [
-      "GET /gateways.json",
-      gatewayList({ token: "GW_test", gateway_type: "test", name: "Test" }),
-    ],
+    ["GET /gateways.json", gatewayList({ token: "GW_test", gateway_type: "test", name: "Test" })],
     ["POST /gateways/*/purchase.json", fail.purchase()],
   ]),
 
@@ -56,10 +53,7 @@ export const currencyPreservedOnGatewayError: Scenario = {
   },
 
   mockResponses: new Map<string, MockResponseValue>([
-    [
-      "GET /gateways.json",
-      gatewayList({ token: "GW_test", gateway_type: "test", name: "Test" }),
-    ],
+    ["GET /gateways.json", gatewayList({ token: "GW_test", gateway_type: "test", name: "Test" })],
     [
       "POST /gateways/*/authorize.json",
       fail.authorize({ message: "Gateway unable to process this currency." }),
@@ -93,10 +87,7 @@ export const paymentMethodPreservedOnDecline: Scenario = {
   },
 
   mockResponses: new Map<string, MockResponseValue>([
-    [
-      "GET /gateways.json",
-      gatewayList({ token: "GW_test", gateway_type: "test", name: "Test" }),
-    ],
+    ["GET /gateways.json", gatewayList({ token: "GW_test", gateway_type: "test", name: "Test" })],
     ["POST /gateways/*/purchase.json", fail.decline()],
   ]),
 
@@ -127,10 +118,7 @@ export const amountPreservedOnSuccess: Scenario = {
   },
 
   mockResponses: new Map<string, MockResponseValue>([
-    [
-      "GET /gateways.json",
-      gatewayList({ token: "GW_test", gateway_type: "test", name: "Test" }),
-    ],
+    ["GET /gateways.json", gatewayList({ token: "GW_test", gateway_type: "test", name: "Test" })],
     ["POST /gateways/*/purchase.json", echo.purchase()],
   ]),
 
@@ -204,10 +192,7 @@ export const amountTooLowDoesNotAlter: Scenario = {
   },
 
   mockResponses: new Map<string, MockResponseValue>([
-    [
-      "GET /gateways.json",
-      gatewayList({ token: "GW_test", gateway_type: "test", name: "Test" }),
-    ],
+    ["GET /gateways.json", gatewayList({ token: "GW_test", gateway_type: "test", name: "Test" })],
     [
       "POST /gateways/*/purchase.json",
       fail.purchase({ message: "Amount too low. Minimum transaction amount is 50 cents." }),

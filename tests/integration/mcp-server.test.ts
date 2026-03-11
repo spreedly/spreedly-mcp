@@ -131,9 +131,7 @@ describe("MCP tool listing", () => {
     });
     const { tools } = await harness.client.listTools();
     const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual(
-      [...ALWAYS_ENABLED_TOOLS, ...TRANSACTION_INITIATION_TOOLS].sort(),
-    );
+    expect(names).toEqual([...ALWAYS_ENABLED_TOOLS, ...TRANSACTION_INITIATION_TOOLS].sort());
   });
 
   it("adds exactly the admin tools when administrativeEnabled", async () => {
@@ -143,9 +141,7 @@ describe("MCP tool listing", () => {
     });
     const { tools } = await harness.client.listTools();
     const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual(
-      [...ALWAYS_ENABLED_TOOLS, ...ADMINISTRATIVE_TOOLS].sort(),
-    );
+    expect(names).toEqual([...ALWAYS_ENABLED_TOOLS, ...ADMINISTRATIVE_TOOLS].sort());
   });
 
   it("adds exactly the tokenization tools when paymentMethodTokenizationEnabled", async () => {
@@ -155,9 +151,7 @@ describe("MCP tool listing", () => {
     });
     const { tools } = await harness.client.listTools();
     const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual(
-      [...ALWAYS_ENABLED_TOOLS, ...PAYMENT_METHOD_TOKENIZATION_TOOLS].sort(),
-    );
+    expect(names).toEqual([...ALWAYS_ENABLED_TOOLS, ...PAYMENT_METHOD_TOKENIZATION_TOOLS].sort());
   });
 
   it("returns exactly all tools when everything is enabled", async () => {
@@ -226,9 +220,7 @@ describe("MCP tool descriptions", () => {
     harness = await createMcpHarness(ALL_ENABLED);
     const { tools } = await harness.client.listTools();
     const purchaseTool = tools.find((t) => t.name === "spreedly_gateway_purchase");
-    expect(purchaseTool?.description).toContain(
-      "[Enabled by TRANSACTION_INITIATION_ENABLED=true]",
-    );
+    expect(purchaseTool?.description).toContain("[Enabled by TRANSACTION_INITIATION_ENABLED=true]");
   });
 
   it("read-only tools do not have a category suffix", async () => {

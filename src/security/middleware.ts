@@ -34,7 +34,8 @@ export function wrapHandler<TParams extends Record<string, unknown>>(
       const validated = validate(sanitized);
       const result = await handler(validated, { ...ctx, transport: tracked });
       const text = typeof result === "string" ? result : JSON.stringify(result, null, 2);
-      if (audit) emitAuditEvent(toolName, ctx.environmentKey, startTime, undefined, getHttpContext());
+      if (audit)
+        emitAuditEvent(toolName, ctx.environmentKey, startTime, undefined, getHttpContext());
       return { content: [{ type: "text", text }] };
     } catch (error) {
       if (audit) {

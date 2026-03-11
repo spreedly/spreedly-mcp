@@ -352,10 +352,7 @@ describe("per-tool behavioral guidance", () => {
     });
   }
 
-  const followUpFinancialTools = [
-    "spreedly_transaction_capture",
-    "spreedly_transaction_credit",
-  ];
+  const followUpFinancialTools = ["spreedly_transaction_capture", "spreedly_transaction_credit"];
 
   for (const toolName of followUpFinancialTools) {
     it(`${toolName} description contains amount immutability guidance`, () => {

@@ -109,10 +109,7 @@ export const findExistingSandboxGateway: Scenario = {
         name: "Stripe Sandbox",
       }),
     ],
-    [
-      "POST /gateways.json",
-      gatewayCreate({ token: "GW_new_stripe", gateway_type: "stripe" }),
-    ],
+    ["POST /gateways.json", gatewayCreate({ token: "GW_new_stripe", gateway_type: "stripe" })],
   ]),
 
   messages: [
@@ -145,10 +142,7 @@ export const clarifyAmbiguousGateway: Scenario = {
         { token: "GW_stripe_production", gateway_type: "stripe", name: "Stripe Production" },
       ),
     ],
-    [
-      "POST /gateways.json",
-      gatewayCreate({ token: "GW_new_stripe", gateway_type: "stripe" }),
-    ],
+    ["POST /gateways.json", gatewayCreate({ token: "GW_new_stripe", gateway_type: "stripe" })],
   ]),
 
   messages: [
