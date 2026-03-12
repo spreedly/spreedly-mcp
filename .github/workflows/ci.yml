@@ -70,3 +70,21 @@ jobs:
         with:
           fail-on-severity: high
           comment-summary-in-pr: always
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check for potential secrets
+        run: |
+          # Fail if any file contains patterns that look like real Spreedly tokens
+          # Real environment keys are 20+ char alphanumeric strings
+          # This is a basic check -- GitHub's built-in secret scanning covers the rest
+          if grep -rn --include='*.ts' --include='*.json' --include='*.env' \
+            -E '(SPREEDLY_ENVIRONMENT_KEY|SPREEDLY_ACCESS_SECRET)\s*[=:]\s*"[A-Za-z0-9]{20,}"' \
+            --exclude-dir=node_modules --exclude-dir=dist .; then
+            echo "::error::Potential real credentials detected in source files"
+            exit 1
+          fi
+          echo "No credential patterns found"
