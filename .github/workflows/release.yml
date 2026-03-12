@@ -9,7 +9,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       id-token: write
 
     steps:
@@ -34,10 +34,50 @@ jobs:
       - name: Audit for critical and high vulnerabilities
         run: npm audit --audit-level=high
 
+      - name: Check for potential secrets
+        run: |
+          # Fail if any file contains patterns that look like real Spreedly tokens
+          # Real environment keys are 20+ char alphanumeric strings
+          # This is a basic check -- GitHub's built-in secret scanning covers the rest
+          if grep -rn --include='*.ts' --include='*.json' --include='*.env' \
+            -E '(SPREEDLY_ENVIRONMENT_KEY|SPREEDLY_ACCESS_SECRET)\s*[=:]\s*"[A-Za-z0-9]{20,}"' \
+            --exclude-dir=node_modules --exclude-dir=dist .; then
+            echo "::error::Potential real credentials detected in source files"
+            exit 1
+          fi
+          echo "No credential patterns found"
+
       - name: Build
         run: npm run build
 
+      - name: Verify package contents
+        run: npm pack --dry-run
+
+      - name: Create package tarball
+        id: pack
+        run: |
+          TARBALL=$(npm pack)
+          echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
+
+      - name: Generate SHA-256 checksum
+        run: sha256sum "${{ steps.pack.outputs.tarball }}" > SHA256SUMS.txt
+
+      - name: Generate SBOM (CycloneDX)
+        run: npm sbom --sbom-format cyclonedx --sbom-type library --omit dev > sbom.cdx.json
+
       - name: Publish to npm
-        run: npm publish --provenance --access public
+        run: npm publish "${{ steps.pack.outputs.tarball }}" --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create draft GitHub Release
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "${{ github.ref_name }}" \
+            --generate-notes \
+            --draft \
+            "${{ steps.pack.outputs.tarball }}" \
+            SHA256SUMS.txt \
+            sbom.cdx.json
+        env:
+          GH_TOKEN: ${{ github.token }}
