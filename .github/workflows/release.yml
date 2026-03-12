@@ -11,6 +11,7 @@ jobs:
     permissions:
       contents: write
       id-token: write
+      security-events: write
 
     steps:
       - uses: actions/checkout@v6
@@ -34,41 +35,55 @@ jobs:
       - name: Audit for critical and high vulnerabilities
         run: npm audit --audit-level=high
 
-      - name: Check for potential secrets
-        run: |
-          # Fail if any file contains patterns that look like real Spreedly tokens
-          # Real environment keys are 20+ char alphanumeric strings
-          # This is a basic check -- GitHub's built-in secret scanning covers the rest
-          if grep -rn --include='*.ts' --include='*.json' --include='*.env' \
-            -E '(SPREEDLY_ENVIRONMENT_KEY|SPREEDLY_ACCESS_SECRET)\s*[=:]\s*"[A-Za-z0-9]{20,}"' \
-            --exclude-dir=node_modules --exclude-dir=dist .; then
-            echo "::error::Potential real credentials detected in source files"
-            exit 1
-          fi
-          echo "No credential patterns found"
-
       - name: Build
         run: npm run build
-
-      - name: Verify package contents
-        run: npm pack --dry-run
 
       - name: Create package tarball
         id: pack
         run: |
+          echo "=== Package contents ==="
+          npm pack --dry-run
+          echo ""
           TARBALL=$(npm pack)
           echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
 
-      - name: Generate SHA-256 checksum
-        run: sha256sum "${{ steps.pack.outputs.tarball }}" > SHA256SUMS.txt
+      - name: Scan package tarball for secrets
+        id: gitleaks
+        continue-on-error: true
+        env:
+          GITLEAKS_VERSION: "8.30.0"
+        run: |
+          wget -q "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          tar -xzf "gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          chmod +x gitleaks
+
+          # Extract tarball — scan exactly what customers receive
+          mkdir -p /tmp/pkg-scan
+          tar xzf "${{ steps.pack.outputs.tarball }}" -C /tmp/pkg-scan
+
+          # Scan in filesystem mode (--no-git): covers dist/ which GHAS never sees
+          ./gitleaks detect --source /tmp/pkg-scan --no-git --verbose --report-format sarif --report-path gitleaks-results.sarif
+
+      - name: Upload gitleaks SARIF report
+        if: always() && hashFiles('gitleaks-results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: gitleaks-results.sarif
+          category: gitleaks-release
+
+      - name: Fail if secrets detected
+        if: steps.gitleaks.outcome == 'failure'
+        run: |
+          echo "::error::Secrets detected in package tarball — blocking release"
+          exit 1
 
       - name: Generate SBOM (CycloneDX)
-        run: npm sbom --sbom-format cyclonedx --sbom-type library --omit dev > sbom.cdx.json
+        run: |
+          npm sbom --sbom-format cyclonedx --sbom-type library --omit dev > sbom.cdx.json
+          jq -e '.bomFormat == "CycloneDX" and .specVersion and (.components | length > 0)' sbom.cdx.json > /dev/null
 
-      - name: Publish to npm
-        run: npm publish "${{ steps.pack.outputs.tarball }}" --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Generate SHA-256 checksums
+        run: sha256sum "${{ steps.pack.outputs.tarball }}" sbom.cdx.json > SHA256SUMS.txt
 
       - name: Create draft GitHub Release
         run: |
@@ -81,3 +96,8 @@ jobs:
             sbom.cdx.json
         env:
           GH_TOKEN: ${{ github.token }}
+
+      - name: Publish to npm
+        run: npm publish "${{ steps.pack.outputs.tarball }}" --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
