@@ -70,7 +70,7 @@ describe("SpreedlyHttpTransport", () => {
     const transport = createTransport(FAKE_ENV_KEY, FAKE_ACCESS_SECRET);
     await transport.request("GET", "/test");
 
-    expect(capturedHeaders["User-Agent"]).toBe(`Spreedly/MCP V${version}`);
+    expect(capturedHeaders["User-Agent"]).toBe(`Spreedly/MCP v${version}`);
   });
 
   it("constructs full URL from base URL and path", async () => {
