@@ -1,147 +1,106 @@
-# Spreedly MCP -- Agent Reference
+# Spreedly MCP -- Developer Agent Reference
 
-This document is for AI agents that interact with the Spreedly MCP server. It describes what each tool does, its constraints, and common multi-step workflows.
+This document is for AI coding agents that work on the Spreedly MCP **codebase itself**. If you are an agent _using_ the MCP tools to process payments, your guidance comes from the server's `instructions` field delivered during the MCP initialize handshake (source: `src/instructions.ts`).
 
-## Terminology
+## Project Overview
 
-Spreedly sits in a payment chain that can involve multiple levels. This document uses precise terms to avoid confusion:
+This is an MCP (Model Context Protocol) server that exposes the Spreedly payments API as tools for AI agents. It runs over stdio and is distributed as an npm package.
 
-| Term                             | Who they are                                                                                                                            | Example                                                       |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| **Operator**                     | The person or system talking to you (the AI agent) via this MCP server. They manage the Spreedly environment.                           | A developer, a platform engineer, or an automated integration |
-| **Merchant**                     | The business on whose behalf a transaction is processed. May be the operator themselves, or a sub-merchant under a payment facilitator. | An online retailer, a SaaS company                            |
-| **Payment facilitator** (PayFac) | An operator who processes payments on behalf of multiple merchants. Each merchant is represented as a sub-merchant in Spreedly.         | A marketplace platform, a merchant aggregator                 |
-| **Customer** (cardholder)        | The person whose payment method is being charged. They are the end consumer.                                                            | A shopper buying a product                                    |
+## Architecture
 
-The operator may be any of these: a direct merchant using Spreedly for their own payments, a payment facilitator managing many merchants, or a developer building an integration. When reasoning about tokens and operations, always consider which level of this chain the current operation targets.
+### Source Layout
 
-## Authentication
+```
+src/
+├── bin.ts                 # CLI entry point (reads env vars, starts stdio server)
+├── server.ts              # MCP server creation, tool registration, passes instructions
+├── instructions.ts        # SERVER_INSTRUCTIONS constant -- agent-facing guidance delivered via MCP
+├── domains/               # One folder per Spreedly API domain
+│   ├── index.ts           # Aggregates allTools from every domain
+│   ├── gateways/          # tools.ts, schemas.ts
+│   ├── transactions/
+│   ├── paymentMethods/
+│   ├── certificates/
+│   ├── environments/
+│   ├── merchantProfiles/
+│   ├── subMerchants/
+│   ├── events/
+│   ├── protection/
+│   ├── sca/
+│   ├── cardRefresher/
+│   └── networkTokenization/
+├── security/
+│   ├── descriptions.ts    # Per-tool description strings (behavioral guidance lives here)
+│   ├── toolPolicy.ts      # Tool categories, access control, CATEGORY_GUIDANCE tags
+│   ├── middleware.ts       # wrapHandler -- validation, error formatting, audit logging
+│   ├── sanitizer.ts       # Input sanitization
+│   └── audit-logger.ts    # Audit logging
+├── transport/             # HTTP transport abstraction for the Spreedly API
+│   ├── SpreedlyHttpTransport.ts
+│   ├── types.ts
+│   └── errors.ts
+└── types/
+    └── shared.ts          # ToolDefinition interface (name, description, schema, annotations, handler)
+```
 
-The server requires two environment variables:
+### Key Patterns
 
-- `SPREEDLY_ENVIRONMENT_KEY` -- Your Spreedly environment key
-- `SPREEDLY_ACCESS_SECRET` -- Your Spreedly access secret
+**ToolDefinition** (`src/types/shared.ts`): Every tool is a plain object with `name`, `description`, `schema` (Zod), `annotations` (MCP ToolAnnotations), and a `handler` function. Tools are collected in `src/domains/index.ts` as `allTools`.
 
-These are set in the MCP client configuration, not passed as tool parameters. If authentication fails, you will receive an error with code `AUTH_ERROR`.
+**Tool annotations**: Each tool declares MCP-native `annotations` (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`) directly on its definition. These are per-tool, not per-category. The server passes them to `registerTool`. Each annotation has a comment explaining why it was set. When adding or modifying annotations, apply these principles:
 
-## Tool Naming Convention
+- **`readOnlyHint`**: `true` for any GET endpoint. When set, `destructiveHint` and `idempotentHint` are irrelevant per the MCP spec, so omit them.
+- **`destructiveHint`**: `true` if the tool can overwrite or delete existing data. All PUT/PATCH/DELETE endpoints are destructive because they replace existing field values. POST endpoints that only create new resources are _not_ destructive (additive). Financial operations (authorize, capture, void, credit) are destructive because they irreversibly alter transaction state.
+- **`idempotentHint`**: `true` only if repeating the call with the same arguments has _no additional effect on Spreedly's state_. PUT/PATCH updates are idempotent (same payload converges to same state). Retain operations are idempotent (flag is already set). POST endpoints that create new records or new transaction objects are _not_ idempotent — this includes `verify` and `store`, which each create a new transaction record even though their external side-effects may seem repeatable.
+- **`openWorldHint`**: `true` only if the tool reaches external systems _beyond Spreedly_ (payment processors, card networks, SCA/protection providers). CRUD operations on Spreedly-managed resources (gateways, payment methods, certificates, environments, etc.) are closed-world even though they call the Spreedly API — the domain of interaction is bounded. Vaulting a payment method (`_create`) and recaching CVV (`_recache`) are closed-world because they operate on Spreedly's vault, not an external gateway.
 
-All tools follow the pattern: `spreedly_<domain>_<action>`
+**Descriptions** (`src/security/descriptions.ts`): All behavioral guidance for consuming agents lives in per-tool descriptions. Financial tools include immutability language ("Operator-provided values are immutable. Never retry with altered financial parameters."). This is the primary mechanism for steering agent behavior.
 
-Domains: `gateway`, `transaction`, `payment_method`, `certificate`, `environment`, `merchant_profile`, `sub_merchant`, `event`, `protection`, `sca`, `card_refresher`, `network_tokenization`
+**Categories are purely access control** (`src/security/toolPolicy.ts`): `TOOL_CATEGORIES` maps tool names to one of four categories. `CATEGORY_GUIDANCE` only contains toggle tags like `[Enabled by TRANSACTION_INITIATION_ENABLED=true]` -- it does NOT contain behavioral guidance. Behavioral guidance belongs in per-tool descriptions.
 
-## Error Handling
+**Server instructions** (`src/instructions.ts`): The `SERVER_INSTRUCTIONS` constant is passed to the MCP SDK's `instructions` option during server creation. It provides high-level guidance (terminology, token reuse, workflows, best practices) to consuming agents. This is the MCP-native equivalent of a system prompt.
 
-Errors follow a structured format:
+### Adding a New Tool
 
-- `AUTH_ERROR` (401) -- Invalid credentials
-- `FORBIDDEN` (403) -- Insufficient permissions
-- `NOT_FOUND` (404) -- Resource does not exist
-- `VALIDATION_ERROR` (422) -- Invalid input, includes field-level details
-- `RATE_LIMITED` (429) -- Too many requests
-- `GATEWAY_ERROR` (502/503/504) -- Spreedly API temporarily unavailable
-- `PAYMENT_ERROR` (402) -- Payment declined
+1. Add the Zod schema in `src/domains/<domain>/schemas.ts`
+2. Add the tool definition in `src/domains/<domain>/tools.ts` with appropriate `annotations`
+3. Add the description in `src/security/descriptions.ts` -- include behavioral guidance if it's a write or financial tool
+4. If the tool belongs to a gated category, add its name to `TOOL_CATEGORIES` in `src/security/toolPolicy.ts`
+5. Add tests in `tests/domains/<domain>.test.ts`
+6. If the tool affects agent behavior, add or update evals in `evals/scenarios/`
 
-When you receive an error, the message is actionable. Do not retry auth errors; verify credentials instead.
+### Adding a New Domain
 
-## Tool Access Policy
+1. Create `src/domains/<domain>/` with `tools.ts` and `schemas.ts`
+2. Import and spread the tools array into `allTools` in `src/domains/index.ts`
+3. Add descriptions to `src/security/descriptions.ts`
+4. Add domain tests in `tests/domains/<domain>.test.ts`
 
-The server uses three environment variable flags to control which tool categories are available. All default to `false` (disabled). Tools in a disabled category are not registered and cannot be called.
+## Testing
 
-| Variable                              | Default | Controls                                                                                       |
-| ------------------------------------- | ------- | ---------------------------------------------------------------------------------------------- |
-| `PAYMENT_METHOD_TOKENIZATION_ENABLED` | `false` | Tools that send sensitive card data (PAN/CVV) to Spreedly                                      |
-| `TRANSACTION_INITIATION_ENABLED`      | `false` | Tools that initiate action on a payment method with a third party                              |
-| `ADMINISTRATIVE_ENABLED`              | `false` | Tools that create or modify configuration objects (gateways, environments, certificates, etc.) |
+Three test layers, each with a distinct role:
 
-Read-only tools (list, show, transcript) are always available regardless of flag settings.
+- **Unit tests** (`tests/domains/`, `tests/security/`): Vitest tests with mocked HTTP transport. Test individual tool handlers, schemas, middleware, and policy logic in isolation. No credentials needed. Run with `npm test`.
+- **MCP integration tests** (`tests/integration/`): Vitest tests that spin up a real `McpServer` + `Client` via `InMemoryTransport` with a mocked Spreedly transport. Verify instructions delivery, tool listings, annotations, JSON Schema conversion, `callTool` through the full middleware stack, and error formatting. No credentials needed. Run with `npm test` (included in the standard suite). These provide code coverage for the full MCP server stack.
+- **Behavioral evals** (`evals/`): LLM-in-the-loop tests that verify agent decision-making through the same real MCP server stack. Require an OpenAI API key. Run with `npm run test:evals`.
 
-If a tool you expect is missing, the corresponding flag has not been enabled in the MCP client configuration.
+### MCP Test Harness
 
-## Tool Capabilities and Constraints
+`tests/helpers/mcp-harness.ts` provides `createMcpHarness(policy, mockResponses)` which creates a fully-wired MCP client/server pair connected via `InMemoryTransport`. The only mock is the Spreedly HTTP transport. Everything above it -- `createServer`, `wrapHandler`, Zod validation, `sanitizeParams`, `formatError`, audit logging -- runs for real. Both integration tests and behavioral evals use this harness.
 
-**Note:** The tools listed below may not all be available depending on the Tool Access Policy configuration. If a tool is not registered, it will not appear in your tool list.
+### Eval Architecture
 
-### Read-Only Tools (always available)
+- `evals/lib/types.ts` -- `Scenario` interface (`systemPrompt` is optional; `SERVER_INSTRUCTIONS` always comes from the server)
+- `evals/lib/runner.ts` -- creates an MCP harness per scenario, gets tools via `client.listTools()`, routes calls via `client.callTool()`
+- `evals/lib/graders.ts` -- assertion functions (`toolCalled`, `toolCalledWith`, `maxCalls`, `pausedForInput`, etc.)
+- `evals/scenarios/` -- scenario groups: `token-reuse`, `policy-enforcement`, `wasteful-patterns`, `operator-fidelity`
 
-- All `_list` and `_show` tools
-- `spreedly_gateway_list_supported`
-- `spreedly_transaction_transcript`
-- `spreedly_network_tokenization_card_metadata`
-- `spreedly_network_tokenization_token_status`
+Evals test the actual MCP server end-to-end: the LLM receives `SERVER_INSTRUCTIONS`, real tool definitions (with annotations), and tool call responses go through the full middleware stack.
 
-### Write Tools (create or modify resources)
+## Important Conventions
 
-- `_create`, `_update`, `_retain` tools
-- `spreedly_gateway_authorize`, `_purchase`, `_verify`, `_store`, `_general_credit`
-- `spreedly_transaction_capture`, `_void`, `_credit`, `_complete`, `_confirm`
-- `spreedly_payment_method_recache`, `_update_gratis`, `_delete_metadata`
-
-### Destructive Tools (irreversible)
-
-- `spreedly_transaction_void` -- Voids a transaction (cannot be undone)
-
-## Should I Reuse a Token?
-
-Spreedly uses tokens to identify resources. Before reusing any token from a previous operation, ask: **"Is this the right resource for what I am doing right now?"** No token should be blindly reused -- every token requires you to consider whether the current context matches the context in which the token was obtained.
-
-### How to think about each token type
-
-| Token                    | What it represents                                                    | When to reuse                                                                        | When NOT to reuse                                                                                                                                  |
-| ------------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `gateway_token`          | A connection to a specific payment processor (e.g. Stripe, Braintree) | The current transaction should be routed to the same processor                       | The operator wants to use a different processor, or the environment has multiple gateways for different purposes (e.g. one for US, another for EU) |
-| `sca_provider_key`       | A 3D Secure authentication provider                                   | The same SCA provider applies to this transaction                                    | A different SCA provider is needed (e.g. different provider for different card networks or regions)                                                |
-| `merchant_profile_token` | A set of merchant business details                                    | The transaction is on behalf of the same merchant                                    | The transaction is on behalf of a different merchant (common when the operator is a payment facilitator)                                           |
-| `sub_merchant_key`       | A sub-merchant within a payment facilitator                           | The transaction is for the same sub-merchant                                         | The transaction is for a different sub-merchant -- each sub-merchant represents a distinct merchant under the payment facilitator                  |
-| `payment_method_token`   | A specific customer's (cardholder's) card or bank account             | You are transacting for the **same customer** who owns this payment method           | You are transacting for a **different customer** -- using the wrong token means charging the wrong person                                          |
-| `transaction_token`      | A specific authorization, purchase, or other transaction              | You are performing a follow-up on **that exact transaction** (capture, void, refund) | You are working with a different transaction -- using the wrong token means voiding or refunding the wrong operation                               |
-
-### Key principles
-
-1. **Never assume -- verify.** If you have a token from a previous step, confirm it still applies. Did the operator switch customers? Switch merchants? Ask for a different gateway?
-2. **When in doubt, ask the operator.** It is always safer to confirm than to guess, especially for `payment_method_token` and `transaction_token` where mistakes have direct financial consequences. However, when the operator's request already contains all required parameters (amount, currency, payment method, gateway type or token), proceed with the operation -- do not re-confirm values they explicitly provided.
-3. **Do not recreate what already exists.** If the context has not changed and you have the right token, use it. Do not re-list gateways or recreate configuration objects for each transaction.
-4. **Do not create configuration objects per-transaction.** Gateways, SCA providers, merchant profiles, and sub-merchants are long-lived. If you need one and don't have the token, use the corresponding `_list` tool to find an existing one before creating a new one.
-
-## Best Practices
-
-- **Never repeat a successful transaction.** Authorizations, purchases, captures, voids, and credits have real financial consequences. If a transaction tool call returns a successful result, that operation is done -- do not call it again with the same parameters. A duplicate call means a duplicate charge, hold, or refund.
-- **Perform only the operations requested.** When the operator asks for a set of transactions, execute each one exactly once and stop. Do not add extra operations, retry successful calls, or re-verify completed work.
-- **Use the minimum permissions needed.** If you are only processing transactions, only `TRANSACTION_INITIATION_ENABLED` needs to be set to `"true"`.
-- **Check for existing configuration resources before creating.** If you need a `gateway_token` you don't already have, use `spreedly_gateway_list` to find an existing one before calling `spreedly_gateway_create`.
-
-## Common Workflows
-
-### Process a Payment (authorize + capture)
-
-1. Determine the correct `gateway_token` for this transaction. If you don't have one, use `spreedly_gateway_list` to find a suitable gateway. Only use `spreedly_gateway_create` if no suitable gateway exists.
-2. `spreedly_gateway_authorize` with `gateway_token`, `payment_method_token`, `amount`, `currency_code`
-3. Use the `transaction.token` from the response
-4. `spreedly_transaction_capture` with `transaction_token`
-
-### One-Step Purchase
-
-1. Determine the correct `gateway_token` for this transaction. If you don't have one, use `spreedly_gateway_list` to find a suitable gateway. Only use `spreedly_gateway_create` if no suitable gateway exists.
-2. `spreedly_gateway_purchase` with `gateway_token`, `payment_method_token`, `amount`, `currency_code`
-
-### Refund a Transaction
-
-1. `spreedly_transaction_credit` with `transaction_token` and optional `amount` for partial refund
-
-### Tokenize a Card
-
-1. `spreedly_payment_method_create` with card details in `payment_method.credit_card`
-2. The response contains `payment_method.token` for future use
-
-### Verify a Card Without Charging
-
-1. Determine the correct `gateway_token` for this verification. If you don't have one, use `spreedly_gateway_list` to find a suitable gateway. Only use `spreedly_gateway_create` if no suitable gateway exists.
-2. `spreedly_gateway_verify` with `gateway_token`, `payment_method_token`, `currency_code`
-
-## Pagination
-
-List endpoints support pagination via `since_token`. Pass the token of the last item from the previous page to get the next page. Use `order: "desc"` for newest-first.
-
-## Amount Format
-
-All amounts are in **cents** (integer). For example, $10.00 USD = `1000`. Currency codes are ISO 4217 (e.g., `"USD"`, `"EUR"`, `"GBP"`).
+- **Descriptions are the primary behavioral guardrail.** When an agent must not alter financial parameters, that guidance goes in the tool's description -- not in AGENTS.md, not in category guidance.
+- **Annotations are per-tool.** Different tools in the same category can have different annotation values (e.g., `_verify` is not destructive, `_purchase` is). See the "Tool annotations" section above for the decision framework.
+- **Never put behavioral guidance in CATEGORY_GUIDANCE.** Categories are for access control (enabling/disabling tool groups). The text appended by `getToolDescription` is only a toggle tag.
+- **SERVER_INSTRUCTIONS is for consuming agents.** Changes to `src/instructions.ts` affect every agent that connects to this MCP server. Run evals (`npm run test:evals`) after modifying it.
+- **This file (AGENTS.md) is for coding agents.** It should contain project structure, conventions, and development guidance -- not payment processing workflows.

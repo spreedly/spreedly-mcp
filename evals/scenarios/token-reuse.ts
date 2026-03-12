@@ -1,5 +1,5 @@
 import type { Scenario } from "../lib/types.js";
-import type { MockResponseFn, MockResponseValue } from "../../tests/helpers/transport.js";
+import type { MockResponseValue } from "../../tests/helpers/transport.js";
 import {
   toolCalled,
   toolCalledWith,
@@ -8,37 +8,7 @@ import {
   argumentSameAcrossCalls,
   callOrder,
 } from "../lib/graders.js";
-import { fakeGateway, fakeTransaction } from "../../tests/helpers/fixtures.js";
-
-const echoAuthorize: MockResponseFn = (_method, path, options) => {
-  const body = options?.body as { transaction?: Record<string, unknown> } | undefined;
-  const txn = body?.transaction ?? {};
-  const gatewayToken = path.split("/")[2] ?? "unknown";
-  return {
-    data: fakeTransaction({
-      transaction_type: "Authorization",
-      gateway_token: gatewayToken,
-      payment_method_token: txn.payment_method_token,
-      amount: txn.amount,
-      currency_code: txn.currency_code,
-    }),
-  };
-};
-
-const echoPurchase: MockResponseFn = (_method, path, options) => {
-  const body = options?.body as { transaction?: Record<string, unknown> } | undefined;
-  const txn = body?.transaction ?? {};
-  const gatewayToken = path.split("/")[2] ?? "unknown";
-  return {
-    data: fakeTransaction({
-      transaction_type: "Purchase",
-      gateway_token: gatewayToken,
-      payment_method_token: txn.payment_method_token,
-      amount: txn.amount,
-      currency_code: txn.currency_code,
-    }),
-  };
-};
+import { echo, gatewayList } from "../lib/mock-responders.js";
 
 export const noReusePaymentMethodAcrossCustomers: Scenario = {
   name: "Do not reuse payment_method_token across customers",
@@ -54,19 +24,9 @@ export const noReusePaymentMethodAcrossCustomers: Scenario = {
   mockResponses: new Map<string, MockResponseValue>([
     [
       "GET /gateways.json",
-      {
-        data: {
-          gateways: [
-            fakeGateway({
-              token: "GW_stripe_us",
-              gateway_type: "stripe",
-              name: "Stripe US",
-            }).gateway,
-          ],
-        },
-      },
+      gatewayList({ token: "GW_stripe_us", gateway_type: "stripe", name: "Stripe US" }),
     ],
-    ["POST /gateways/*/authorize.json", echoAuthorize],
+    ["POST /gateways/*/authorize.json", echo.authorize()],
   ]),
 
   messages: [
@@ -99,19 +59,9 @@ export const reuseGatewayTokenForSameProcessor: Scenario = {
   mockResponses: new Map<string, MockResponseValue>([
     [
       "GET /gateways.json",
-      {
-        data: {
-          gateways: [
-            fakeGateway({
-              token: "GW_stripe_us",
-              gateway_type: "stripe",
-              name: "Stripe US",
-            }).gateway,
-          ],
-        },
-      },
+      gatewayList({ token: "GW_stripe_us", gateway_type: "stripe", name: "Stripe US" }),
     ],
-    ["POST /gateways/*/purchase.json", echoPurchase],
+    ["POST /gateways/*/purchase.json", echo.purchase()],
   ]),
 
   messages: [
@@ -141,34 +91,9 @@ export const authorizeThenCapture: Scenario = {
     administrativeEnabled: false,
   },
 
-  mockResponses: new Map<string, import("../../tests/helpers/transport.js").MockResponseValue>([
-    [
-      "POST /gateways/*/authorize.json",
-      (_method, path, options) => {
-        const body = options?.body as { transaction?: Record<string, unknown> } | undefined;
-        const txn = body?.transaction ?? {};
-        const gatewayToken = path.split("/")[2] ?? "unknown";
-        return {
-          data: fakeTransaction({
-            token: "TXN_auth_001",
-            transaction_type: "Authorization",
-            gateway_token: gatewayToken,
-            payment_method_token: txn.payment_method_token,
-            amount: txn.amount,
-            currency_code: txn.currency_code,
-          }),
-        };
-      },
-    ],
-    [
-      "POST /transactions/*/capture.json",
-      {
-        data: fakeTransaction({
-          token: "TXN_auth_001",
-          transaction_type: "Capture",
-        }),
-      },
-    ],
+  mockResponses: new Map<string, MockResponseValue>([
+    ["POST /gateways/*/authorize.json", echo.authorize({ token: "TXN_auth_001" })],
+    ["POST /transactions/*/capture.json", echo.capture({ amount: 5000, currency_code: "USD" })],
   ]),
 
   messages: [

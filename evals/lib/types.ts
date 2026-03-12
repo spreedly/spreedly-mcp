@@ -16,6 +16,8 @@ export type Grader = (calls: ToolCallRecord[], messages: LLMMessage[]) => GradeR
 export interface Scenario {
   name: string;
   description: string;
+  /** Optional supplementary system prompt appended after SERVER_INSTRUCTIONS. */
+  systemPrompt?: string;
   policy: ToolPolicyConfig;
   mockResponses: Map<string, MockResponseValue>;
   messages: Array<{ role: "user"; content: string }>;

@@ -75,15 +75,28 @@ function formatResults(result: EvalResult): string {
   lines.push("=".repeat(60));
 
   for (const group of result.groups) {
-    const groupStatus =
-      group.totalFailed === 0
-        ? `${group.totalPassed}/${group.totalPassed}`
-        : `${group.totalPassed}/${group.totalPassed + group.totalFailed}`;
-    lines.push(`\n--- ${group.group} (${groupStatus}) ---`);
+    const groupTotal = group.totalPassed + group.totalFailed;
+    lines.push(`\n--- ${group.group} (${group.totalPassed}/${groupTotal}) ---`);
 
     for (const sr of group.scenarios) {
       const status = sr.passed ? "PASS" : "FAIL";
-      lines.push(`\n  [${status}] ${sr.scenario}`);
+      lines.push(`  [${status}] ${sr.scenario}`);
+    }
+  }
+
+  const total = result.totalPassed + result.totalFailed;
+  lines.push("\n" + "-".repeat(60));
+  lines.push(`Total: ${total} | Passed: ${result.totalPassed} | Failed: ${result.totalFailed}`);
+  lines.push("-".repeat(60));
+
+  const failures = result.groups.flatMap((g) => g.scenarios.filter((s) => !s.passed));
+  if (failures.length > 0) {
+    lines.push("\n" + "=".repeat(60));
+    lines.push("FAILURES");
+    lines.push("=".repeat(60));
+
+    for (const sr of failures) {
+      lines.push(`\n  [FAIL] ${sr.scenario}`);
       for (const grade of sr.grades) {
         const icon = grade.pass ? "    + " : "    - ";
         lines.push(`${icon}${grade.reason}`);
@@ -96,7 +109,7 @@ function formatResults(result: EvalResult): string {
           lines.push(`      ${i + 1}. ${tc.tool}${args}`);
         }
       }
-      if (!sr.passed && sr.finalResponse) {
+      if (sr.finalResponse) {
         lines.push("    Model's final response:");
         for (const line of sr.finalResponse.split("\n")) {
           lines.push(`      ${line}`);
@@ -104,12 +117,6 @@ function formatResults(result: EvalResult): string {
       }
     }
   }
-
-  lines.push("\n" + "-".repeat(60));
-  lines.push(
-    `Total: ${result.totalPassed + result.totalFailed} | Passed: ${result.totalPassed} | Failed: ${result.totalFailed}`,
-  );
-  lines.push("-".repeat(60));
 
   return lines.join("\n");
 }

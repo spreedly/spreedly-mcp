@@ -22,6 +22,7 @@ export const transactionTools: ToolDefinition[] = [
   {
     name: "spreedly_transaction_list",
     description: TOOL_DESCRIPTIONS.spreedly_transaction_list,
+    annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ListTransactionsSchema.shape,
     handler: async (params, { transport }) => {
       const { since_token, order } = params as { since_token?: string; order?: string };
@@ -33,6 +34,7 @@ export const transactionTools: ToolDefinition[] = [
   {
     name: "spreedly_transaction_show",
     description: TOOL_DESCRIPTIONS.spreedly_transaction_show,
+    annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ShowTransactionSchema.shape,
     handler: async (params, { transport }) => {
       const { transaction_token } = params as { transaction_token: string };
@@ -43,6 +45,8 @@ export const transactionTools: ToolDefinition[] = [
   {
     name: "spreedly_transaction_update",
     description: TOOL_DESCRIPTIONS.spreedly_transaction_update,
+    // Destructive: PATCH can overwrite existing metadata keys, not a pure append
+    annotations: { destructiveHint: true, idempotentHint: true, openWorldHint: false },
     schema: UpdateTransactionSchema.shape,
     handler: async (params, { transport }) => {
       const { transaction_token, metadata } = params as {
@@ -59,6 +63,7 @@ export const transactionTools: ToolDefinition[] = [
   {
     name: "spreedly_transaction_capture",
     description: TOOL_DESCRIPTIONS.spreedly_transaction_capture,
+    annotations: { destructiveHint: true, idempotentHint: false, openWorldHint: true },
     schema: CaptureTransactionSchema.shape,
     handler: async (params, { transport }) => {
       const { transaction_token, amount, currency_code } = params as {
@@ -81,6 +86,7 @@ export const transactionTools: ToolDefinition[] = [
   {
     name: "spreedly_transaction_void",
     description: TOOL_DESCRIPTIONS.spreedly_transaction_void,
+    annotations: { destructiveHint: true, idempotentHint: false, openWorldHint: true },
     schema: VoidTransactionSchema.shape,
     handler: async (params, { transport }) => {
       const { transaction_token } = params as { transaction_token: string };
@@ -91,6 +97,7 @@ export const transactionTools: ToolDefinition[] = [
   {
     name: "spreedly_transaction_credit",
     description: TOOL_DESCRIPTIONS.spreedly_transaction_credit,
+    annotations: { destructiveHint: true, idempotentHint: false, openWorldHint: true },
     schema: CreditTransactionSchema.shape,
     handler: async (params, { transport }) => {
       const { transaction_token, amount, currency_code } = params as {
@@ -113,6 +120,7 @@ export const transactionTools: ToolDefinition[] = [
   {
     name: "spreedly_transaction_complete",
     description: TOOL_DESCRIPTIONS.spreedly_transaction_complete,
+    annotations: { destructiveHint: true, idempotentHint: false, openWorldHint: true },
     schema: CompleteTransactionSchema.shape,
     handler: async (params, { transport }) => {
       const { transaction_token } = params as { transaction_token: string };
@@ -126,6 +134,7 @@ export const transactionTools: ToolDefinition[] = [
   {
     name: "spreedly_transaction_confirm",
     description: TOOL_DESCRIPTIONS.spreedly_transaction_confirm,
+    annotations: { destructiveHint: true, idempotentHint: false, openWorldHint: true },
     schema: ConfirmTransactionSchema.shape,
     handler: async (params, { transport }) => {
       const { transaction_token } = params as { transaction_token: string };
@@ -139,6 +148,7 @@ export const transactionTools: ToolDefinition[] = [
   {
     name: "spreedly_transaction_transcript",
     description: TOOL_DESCRIPTIONS.spreedly_transaction_transcript,
+    annotations: { readOnlyHint: true, openWorldHint: false },
     schema: TranscriptTransactionSchema.shape,
     handler: async (params, { transport }) => {
       const { transaction_token } = params as { transaction_token: string };

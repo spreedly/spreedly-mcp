@@ -151,11 +151,13 @@ npm run lint        # lint with ESLint
 
 Tests use Vitest with mocked HTTP transport, so they don't require Spreedly credentials and don't make real API calls.
 
+The test suite includes **MCP integration tests** (`tests/integration/`) that spin up a real MCP server and client via `InMemoryTransport`. These verify instructions delivery, tool schemas, annotations, middleware, and error formatting through the full production stack. They use the shared harness at `tests/helpers/mcp-harness.ts`.
+
 ## Running Behavioral Evals
 
-Evals are LLM-in-the-loop tests that verify AI agents make correct decisions when using the MCP server (e.g. correct token reuse, respecting tool policies, avoiding wasteful patterns). They use mocked Spreedly responses -- no Spreedly credentials needed -- but do require an OpenAI API key.
+Evals are LLM-in-the-loop tests that verify AI agents make correct decisions when using the MCP server (e.g. correct token reuse, respecting tool policies, avoiding wasteful patterns). They run through the **real MCP server** with a mocked Spreedly transport, so the LLM receives actual `SERVER_INSTRUCTIONS`, real tool definitions with annotations, and responses formatted by the production middleware. No Spreedly credentials needed, but an OpenAI API key is required.
 
-Evals are **not** run in CI. Please run them locally before submitting changes that affect `AGENTS.md`, tool descriptions, tool policies, or the tool schemas.
+Evals are **not** run in CI. Please run them locally before submitting changes that affect `src/instructions.ts` (server instructions), tool descriptions, tool policies, or the tool schemas.
 
 ### Setup
 
@@ -188,7 +190,7 @@ See `evals/README.md` for full details on adding scenarios, available graders, a
 2. Create a feature branch from `main`
 3. Write tests for your changes
 4. Ensure all checks pass: `npm test && npm run typecheck && npm run lint`
-5. If your change affects agent behavior (tool descriptions, `AGENTS.md`, schemas, policies), run `npm run test:evals` and confirm evals pass
+5. If your change affects agent behavior (tool descriptions, `src/instructions.ts`, schemas, policies), run `npm run test:evals` and confirm evals pass
 6. Submit a pull request with a clear description of the change
 
 ## Project Structure

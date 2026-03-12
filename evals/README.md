@@ -1,6 +1,18 @@
 # Spreedly MCP Behavioral Evals
 
-LLM-in-the-loop evaluation suite that verifies AI agents make correct decisions about token reuse, tool access policy enforcement, and wasteful resource creation patterns.
+LLM-in-the-loop evaluation suite that verifies AI agents make correct decisions about token reuse, tool access policy enforcement, wasteful resource creation patterns, and operator-fidelity.
+
+## Architecture
+
+Evals run through the **real MCP server** with a mocked Spreedly HTTP transport. This means every eval exercises the full production stack: server creation, tool registration, `wrapHandler` middleware (Zod validation, input sanitization, error formatting, audit logging), `SERVER_INSTRUCTIONS` delivery, and MCP-native tool annotations. The only mock is the Spreedly API itself.
+
+```
+LLM (OpenAI)  <-->  Eval Runner  <-->  MCP Client  <-->  MCP Server (real)  <-->  Mock Spreedly Transport
+```
+
+Each scenario spins up a fresh MCP server/client pair via `InMemoryTransport` from the MCP SDK. The runner converts MCP tool definitions to OpenAI function-calling format and routes tool calls back through `client.callTool()`.
+
+`SERVER_INSTRUCTIONS` is always delivered to the LLM as a system message -- there is no "descriptions-only" mode, because production always delivers instructions.
 
 ## Prerequisites
 
@@ -32,6 +44,7 @@ npm run test:evals
 npm run test:evals -- --scenario token-reuse
 npm run test:evals -- --scenario policy-enforcement
 npm run test:evals -- --scenario wasteful-patterns
+npm run test:evals -- --scenario operator-fidelity
 
 # Use a different model
 npm run test:evals -- --model gpt-4o
@@ -44,37 +57,11 @@ npm run test:evals -- --help
 
 Each eval scenario:
 
-1. Configures a **tool access policy** (`ToolPolicyConfig`) that controls which tools are available
-2. Sets up **mock API responses** so no real Spreedly API calls are made
-3. Sends a **user prompt** to the LLM along with the available tools and the `AGENTS.md` system prompt
-4. Runs an **agent loop** where the LLM makes tool calls, the mock server responds, and results feed back
+1. Creates a real **MCP server** (`createServer`) with the scenario's tool access policy and mock responses
+2. Connects an **MCP client** via `InMemoryTransport` -- the client receives `SERVER_INSTRUCTIONS` and tool definitions (with annotations and JSON Schema) exactly as a production client would
+3. Sends the **instructions + user prompt** to the LLM along with the tool definitions
+4. Runs an **agent loop** where the LLM makes tool calls, routed through `client.callTool()` (full middleware stack), and results feed back
 5. **Grades** the recorded tool call sequence using deterministic checks
-
-## Scenario groups
-
-### token-reuse
-
-Verifies correct token handling:
-
-- Different `payment_method_token` for different customers
-- Reusing `gateway_token` when routing to the same processor
-- Using `transaction_token` from authorize response for capture
-
-### policy-enforcement
-
-Verifies the AI respects disabled tool categories:
-
-- Cannot process payments when `TRANSACTION_INITIATION_ENABLED=false`
-- Cannot create gateways when `ADMINISTRATIVE_ENABLED=false`
-- Cannot tokenize cards when `PAYMENT_METHOD_TOKENIZATION_ENABLED=false`
-
-### wasteful-patterns
-
-Verifies the AI avoids unnecessary resource creation:
-
-- Lists gateways before creating when one exists
-- Does not create a gateway for every transaction
-- Checks for existing resources before creating duplicates
 
 ## Adding a scenario
 
@@ -128,7 +115,7 @@ Eval output includes the full arguments of every tool call the model makes. This
 
 Because arguments are logged in full, **evals must only use synthetic/mock data**. Never use real Spreedly credentials, real card numbers, or real gateway API keys in scenario definitions or mock responses. All tokens (e.g. `GW_stripe_us`, `PM_alice_visa`, `TXN_auth_001`) should be obviously fake identifiers that carry no real-world meaning.
 
-The eval runner enforces this by design: scenarios define their own `mockResponses` and never contact the Spreedly API.
+The eval runner enforces this by design: scenarios define their own `mockResponses`, and the MCP server is wired to a mock Spreedly transport that never contacts the real API.
 
 ## Interpreting results
 

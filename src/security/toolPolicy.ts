@@ -53,12 +53,9 @@ const TOOL_CATEGORIES: Record<string, ToolCategory> = {
 };
 
 export const CATEGORY_GUIDANCE: Record<ToolCategory, string> = {
-  administrative:
-    "[Configuration] This is a setup operation for a long-lived resource. Always use the corresponding list/show tool to check for existing resources before creating new ones. Do not recreate configuration objects for each transaction.",
-  transaction_initiation:
-    "[Transaction] This is a per-transaction operation. Before using any token, verify it is the right resource for this specific operation. Never assume a token from a previous operation applies here -- confirm the gateway, merchant, and payment method all match the current context.",
-  payment_method_tokenization:
-    "[Tokenization] This operation handles sensitive card data (PAN/CVV). Only use when the merchant has explicitly enabled payment method tokenization.",
+  administrative: "[Enabled by ADMINISTRATIVE_ENABLED=true]",
+  transaction_initiation: "[Enabled by TRANSACTION_INITIATION_ENABLED=true]",
+  payment_method_tokenization: "[Enabled by PAYMENT_METHOD_TOKENIZATION_ENABLED=true]",
   always_enabled: "",
 };
 

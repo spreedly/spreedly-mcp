@@ -16,6 +16,8 @@ export const cardRefresherTools: ToolDefinition[] = [
   {
     name: "spreedly_card_refresher_inquiry",
     description: TOOL_DESCRIPTIONS.spreedly_card_refresher_inquiry,
+    // Open world: reaches card networks outside Spreedly to refresh card data
+    annotations: { destructiveHint: false, idempotentHint: false, openWorldHint: true },
     schema: CardRefresherInquirySchema.shape,
     handler: async (params, { transport }) => {
       const res = await transport.request("POST", "/card_refresher/inquiry.json", { body: params });
@@ -25,6 +27,7 @@ export const cardRefresherTools: ToolDefinition[] = [
   {
     name: "spreedly_card_refresher_show_inquiry",
     description: TOOL_DESCRIPTIONS.spreedly_card_refresher_show_inquiry,
+    annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ShowCardRefresherInquirySchema.shape,
     handler: async (params, { transport }) => {
       const { inquiry_token } = params as { inquiry_token: string };
@@ -35,6 +38,7 @@ export const cardRefresherTools: ToolDefinition[] = [
   {
     name: "spreedly_card_refresher_list_inquiries",
     description: TOOL_DESCRIPTIONS.spreedly_card_refresher_list_inquiries,
+    annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ListCardRefresherInquiriesSchema.shape,
     handler: async (params, { transport }) => {
       const { since_token } = params as { since_token?: string };

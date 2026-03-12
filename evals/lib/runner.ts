@@ -1,10 +1,4 @@
-import { readFileSync } from "node:fs";
-import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import { z } from "zod";
-import { allTools } from "../../src/domains/index.js";
-import { filterTools, getToolDescription } from "../../src/security/toolPolicy.js";
-import { createMockTransport } from "../../tests/helpers/transport.js";
+import { createMcpHarness, type McpHarness } from "../../tests/helpers/mcp-harness.js";
 import type {
   Scenario,
   ToolCallRecord,
@@ -18,76 +12,32 @@ import type {
 
 const MAX_TURNS = 20;
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-function loadSystemPrompt(): string {
-  const agentsPath = resolve(__dirname, "../../AGENTS.md");
-  return readFileSync(agentsPath, "utf-8");
+interface McpTool {
+  name: string;
+  description?: string;
+  inputSchema: { type: "object"; properties?: Record<string, object>; required?: string[] };
+  annotations?: Record<string, unknown>;
 }
 
-function toolsToLLMFormat(policy: Scenario["policy"]): {
-  llmTools: LLMToolDef[];
-  enabledToolNames: Set<string>;
-} {
-  const enabled = filterTools(allTools, policy);
-  const llmTools: LLMToolDef[] = enabled.map((tool) => {
-    const description = getToolDescription(tool);
-    const shape = tool.schema;
-    const properties: Record<string, unknown> = {};
-    const required: string[] = [];
-
-    for (const [key, value] of Object.entries(shape)) {
-      if (value instanceof z.ZodType) {
-        try {
-          properties[key] = z.toJSONSchema(value);
-        } catch {
-          properties[key] = { type: "string" };
-        }
-        if (!value.isOptional()) {
-          required.push(key);
-        }
-      }
-    }
-
-    return {
-      type: "function",
-      function: {
-        name: tool.name,
-        description,
-        parameters: {
-          type: "object",
-          properties,
-          required: required.length > 0 ? required : undefined,
-        },
-      },
-    };
-  });
-
-  return {
-    llmTools,
-    enabledToolNames: new Set(enabled.map((t) => t.name)),
-  };
+function mcpToolsToLLMFormat(tools: McpTool[]): LLMToolDef[] {
+  return tools.map((tool) => ({
+    type: "function",
+    function: {
+      name: tool.name,
+      description: tool.description ?? "",
+      parameters: tool.inputSchema,
+    },
+  }));
 }
 
-function executeToolCall(
-  toolName: string,
-  args: Record<string, unknown>,
-  policy: Scenario["policy"],
-  mockResponses: Scenario["mockResponses"],
-): unknown {
-  const enabled = filterTools(allTools, policy);
-  const tool = enabled.find((t) => t.name === toolName);
-  if (!tool) {
-    return { error: `Tool ${toolName} is not available with current policy` };
+function extractCallToolText(result: Record<string, unknown>): string {
+  if ("content" in result && Array.isArray(result.content)) {
+    const texts = (result.content as Array<{ type?: string; text?: string }>)
+      .filter((c) => c.type === "text")
+      .map((c) => c.text ?? "");
+    return texts.join("\n");
   }
-
-  const { transport } = createMockTransport(mockResponses);
-
-  try {
-    return tool.handler(args, { transport });
-  } catch (err) {
-    return { error: String(err) };
-  }
+  return JSON.stringify(result);
 }
 
 export async function runScenario(
@@ -95,76 +45,91 @@ export async function runScenario(
   provider: LLMProvider,
   group: string,
 ): Promise<ScenarioResult> {
-  const { llmTools, enabledToolNames } = toolsToLLMFormat(scenario.policy);
-  const systemPrompt = loadSystemPrompt();
-  const toolCalls: ToolCallRecord[] = [];
-  let finalResponse: string | undefined;
+  let harness: McpHarness | undefined;
+  try {
+    harness = await createMcpHarness(scenario.policy, scenario.mockResponses);
 
-  const messages: LLMMessage[] = [
-    { role: "system", content: systemPrompt },
-    ...scenario.messages.map((m) => ({
-      role: "user" as const,
-      content: m.content,
-    })),
-  ];
+    const instructions = harness.client.getInstructions();
+    const { tools } = await harness.client.listTools();
+    const llmTools = mcpToolsToLLMFormat(tools as McpTool[]);
+    const enabledToolNames = new Set(tools.map((t) => t.name));
 
-  for (let turn = 0; turn < MAX_TURNS; turn++) {
-    const response = await provider.chat(messages, llmTools);
+    const toolCalls: ToolCallRecord[] = [];
+    let finalResponse: string | undefined;
 
-    messages.push(response);
-
-    if (!response.tool_calls || response.tool_calls.length === 0) {
-      finalResponse = response.content || undefined;
-      break;
+    const messages: LLMMessage[] = [];
+    if (instructions) {
+      messages.push({ role: "system", content: instructions });
     }
+    if (scenario.systemPrompt) {
+      messages.push({ role: "system", content: scenario.systemPrompt });
+    }
+    messages.push(
+      ...scenario.messages.map((m) => ({
+        role: "user" as const,
+        content: m.content,
+      })),
+    );
 
-    for (const tc of response.tool_calls) {
-      let args: Record<string, unknown>;
-      try {
-        args = JSON.parse(tc.function.arguments);
-      } catch {
-        args = {};
+    for (let turn = 0; turn < MAX_TURNS; turn++) {
+      const response = await provider.chat(messages, llmTools);
+
+      messages.push(response);
+
+      if (!response.tool_calls || response.tool_calls.length === 0) {
+        finalResponse = response.content || undefined;
+        break;
       }
 
-      toolCalls.push({ tool: tc.function.name, arguments: args });
-
-      let result: unknown;
-      if (enabledToolNames.has(tc.function.name)) {
+      for (const tc of response.tool_calls) {
+        let args: Record<string, unknown>;
         try {
-          result = await executeToolCall(
-            tc.function.name,
-            args,
-            scenario.policy,
-            scenario.mockResponses,
-          );
-        } catch (err) {
-          result = { error: String(err) };
+          args = JSON.parse(tc.function.arguments);
+        } catch {
+          args = {};
         }
-      } else {
-        result = {
-          error: `Tool ${tc.function.name} is not available. Check your tool access policy.`,
-        };
+
+        toolCalls.push({ tool: tc.function.name, arguments: args });
+
+        let resultText: string;
+        if (enabledToolNames.has(tc.function.name)) {
+          try {
+            const callResult = await harness.client.callTool({
+              name: tc.function.name,
+              arguments: args,
+            });
+            resultText = extractCallToolText(callResult as Record<string, unknown>);
+          } catch (err) {
+            resultText = JSON.stringify({ error: String(err) });
+          }
+        } else {
+          resultText = JSON.stringify({
+            error: `Tool ${tc.function.name} is not available. Check your tool access policy.`,
+          });
+        }
+
+        messages.push({
+          role: "tool",
+          content: resultText,
+          tool_call_id: tc.id,
+        });
       }
-
-      messages.push({
-        role: "tool",
-        content: JSON.stringify(result),
-        tool_call_id: tc.id,
-      });
     }
+
+    const grades = scenario.graders.map((grader) => grader(toolCalls, messages));
+    const passed = grades.every((g) => g.pass);
+
+    return {
+      scenario: scenario.name,
+      group,
+      grades,
+      passed,
+      toolCalls,
+      finalResponse,
+    };
+  } finally {
+    if (harness) await harness.close();
   }
-
-  const grades = scenario.graders.map((grader) => grader(toolCalls, messages));
-  const passed = grades.every((g) => g.pass);
-
-  return {
-    scenario: scenario.name,
-    group,
-    grades,
-    passed,
-    toolCalls,
-    finalResponse,
-  };
 }
 
 export async function runAllScenarios(
