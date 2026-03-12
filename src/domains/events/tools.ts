@@ -12,6 +12,7 @@ export const eventTools: ToolDefinition[] = [
   {
     name: "spreedly_event_list",
     description: TOOL_DESCRIPTIONS.spreedly_event_list,
+    annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ListEventsSchema.shape,
     handler: async (params, { transport }) => {
       const { since_token } = params as { since_token?: string };
@@ -23,6 +24,7 @@ export const eventTools: ToolDefinition[] = [
   {
     name: "spreedly_event_show",
     description: TOOL_DESCRIPTIONS.spreedly_event_show,
+    annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ShowEventSchema.shape,
     handler: async (params, { transport }) => {
       const { event_id } = params as { event_id: string };

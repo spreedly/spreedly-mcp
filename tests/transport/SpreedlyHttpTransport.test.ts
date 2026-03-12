@@ -7,6 +7,7 @@ import {
   SpreedlyError,
 } from "../../src/transport/errors.js";
 import { FAKE_ENV_KEY, FAKE_ACCESS_SECRET } from "../helpers/fixtures.js";
+import { version } from "../../package.json";
 
 describe("SpreedlyHttpTransport", () => {
   const originalFetch = globalThis.fetch;
@@ -53,6 +54,23 @@ describe("SpreedlyHttpTransport", () => {
 
     expect(capturedHeaders["Content-Type"]).toBe("application/json");
     expect(capturedHeaders["Accept"]).toBe("application/json");
+  });
+
+  it("sends User-Agent header with package version", async () => {
+    let capturedHeaders: Record<string, string> = {};
+
+    globalThis.fetch = vi.fn().mockImplementation(async (_url: string, init: RequestInit) => {
+      capturedHeaders = Object.fromEntries(Object.entries(init.headers as Record<string, string>));
+      return new Response(JSON.stringify({}), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+
+    const transport = createTransport(FAKE_ENV_KEY, FAKE_ACCESS_SECRET);
+    await transport.request("GET", "/test");
+
+    expect(capturedHeaders["User-Agent"]).toBe(`Spreedly/MCP v${version}`);
   });
 
   it("constructs full URL from base URL and path", async () => {

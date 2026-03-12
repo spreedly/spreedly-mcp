@@ -18,6 +18,7 @@ export const gatewayTools: ToolDefinition[] = [
   {
     name: "spreedly_gateway_create",
     description: TOOL_DESCRIPTIONS.spreedly_gateway_create,
+    annotations: { destructiveHint: false, idempotentHint: false, openWorldHint: false },
     schema: CreateGatewaySchema.shape,
     handler: async (params, { transport }) => {
       const { gateway_type, credentials } = params as {
@@ -32,6 +33,7 @@ export const gatewayTools: ToolDefinition[] = [
   {
     name: "spreedly_gateway_list",
     description: TOOL_DESCRIPTIONS.spreedly_gateway_list,
+    annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ListGatewaysSchema.shape,
     handler: async (params, { transport }) => {
       const { since_token, order } = params as { since_token?: string; order?: string };
@@ -43,6 +45,7 @@ export const gatewayTools: ToolDefinition[] = [
   {
     name: "spreedly_gateway_show",
     description: TOOL_DESCRIPTIONS.spreedly_gateway_show,
+    annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ShowGatewaySchema.shape,
     handler: async (params, { transport }) => {
       const { gateway_token } = params as { gateway_token: string };
@@ -53,6 +56,7 @@ export const gatewayTools: ToolDefinition[] = [
   {
     name: "spreedly_gateway_update",
     description: TOOL_DESCRIPTIONS.spreedly_gateway_update,
+    annotations: { destructiveHint: true, idempotentHint: true, openWorldHint: false },
     schema: UpdateGatewaySchema.shape,
     handler: async (params, { transport }) => {
       const { gateway_token, credentials } = params as {
@@ -67,6 +71,8 @@ export const gatewayTools: ToolDefinition[] = [
   {
     name: "spreedly_gateway_retain",
     description: TOOL_DESCRIPTIONS.spreedly_gateway_retain,
+    // Only sets a flag (not destructive); re-retaining is a no-op (idempotent)
+    annotations: { destructiveHint: false, idempotentHint: true, openWorldHint: false },
     schema: RetainGatewaySchema.shape,
     handler: async (params, { transport }) => {
       const { gateway_token } = params as { gateway_token: string };
@@ -77,6 +83,7 @@ export const gatewayTools: ToolDefinition[] = [
   {
     name: "spreedly_gateway_list_supported",
     description: TOOL_DESCRIPTIONS.spreedly_gateway_list_supported,
+    annotations: { readOnlyHint: true, openWorldHint: false },
     schema: {},
     handler: async (_params, { transport }) => {
       const res = await transport.request("GET", "/gateways_options.json");
@@ -86,6 +93,7 @@ export const gatewayTools: ToolDefinition[] = [
   {
     name: "spreedly_gateway_list_transactions",
     description: TOOL_DESCRIPTIONS.spreedly_gateway_list_transactions,
+    annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ListGatewayTransactionsSchema.shape,
     handler: async (params, { transport }) => {
       const { gateway_token, since_token, order } = params as {
@@ -104,6 +112,7 @@ export const gatewayTools: ToolDefinition[] = [
   {
     name: "spreedly_gateway_authorize",
     description: TOOL_DESCRIPTIONS.spreedly_gateway_authorize,
+    annotations: { destructiveHint: true, idempotentHint: false, openWorldHint: true },
     schema: GatewayAuthorizeSchema.shape,
     handler: async (params, { transport }) => {
       const { gateway_token, ...txnParams } = params as Record<string, unknown> & {
@@ -119,6 +128,7 @@ export const gatewayTools: ToolDefinition[] = [
   {
     name: "spreedly_gateway_purchase",
     description: TOOL_DESCRIPTIONS.spreedly_gateway_purchase,
+    annotations: { destructiveHint: true, idempotentHint: false, openWorldHint: true },
     schema: GatewayPurchaseSchema.shape,
     handler: async (params, { transport }) => {
       const { gateway_token, ...txnParams } = params as Record<string, unknown> & {
@@ -134,6 +144,8 @@ export const gatewayTools: ToolDefinition[] = [
   {
     name: "spreedly_gateway_verify",
     description: TOOL_DESCRIPTIONS.spreedly_gateway_verify,
+    // Not idempotent: each call creates a new Spreedly transaction record despite the zero-dollar auth
+    annotations: { destructiveHint: false, idempotentHint: false, openWorldHint: true },
     schema: GatewayVerifySchema.shape,
     handler: async (params, { transport }) => {
       const { gateway_token, ...txnParams } = params as Record<string, unknown> & {
@@ -149,6 +161,8 @@ export const gatewayTools: ToolDefinition[] = [
   {
     name: "spreedly_gateway_store",
     description: TOOL_DESCRIPTIONS.spreedly_gateway_store,
+    // Not idempotent: each call creates a new transaction and may duplicate the vault entry at the gateway
+    annotations: { destructiveHint: false, idempotentHint: false, openWorldHint: true },
     schema: GatewayStoreSchema.shape,
     handler: async (params, { transport }) => {
       const { gateway_token, payment_method_token } = params as {
@@ -165,6 +179,7 @@ export const gatewayTools: ToolDefinition[] = [
   {
     name: "spreedly_gateway_general_credit",
     description: TOOL_DESCRIPTIONS.spreedly_gateway_general_credit,
+    annotations: { destructiveHint: true, idempotentHint: false, openWorldHint: true },
     schema: GatewayGeneralCreditSchema.shape,
     handler: async (params, { transport }) => {
       const { gateway_token, ...txnParams } = params as Record<string, unknown> & {

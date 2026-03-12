@@ -15,15 +15,15 @@ export const TOOL_DESCRIPTIONS = Object.freeze({
   spreedly_gateway_list_transactions:
     "Lists transactions processed through a specific gateway. Returns transaction summaries. This tool ONLY reads data.",
   spreedly_gateway_authorize:
-    "Authorizes a payment method against a specific gateway without capturing funds. Returns the transaction result. This tool creates an authorization hold.",
+    "Authorizes a payment method against a specific gateway without capturing funds. Returns the transaction result. This tool creates an authorization hold. Before using any token, verify it matches the current context. Operator-provided values (amount, currency, payment method) are immutable. If this operation fails, report the error to the operator and wait for instructions. Do not retry unless the error is clearly transient or the operator has given explicit retry instructions. Never retry with altered financial parameters.",
   spreedly_gateway_purchase:
-    "Authorizes and captures a payment in a single step against a specific gateway. Returns the transaction result. This tool processes a payment.",
+    "Authorizes and captures a payment in a single step against a specific gateway. Returns the transaction result. This tool processes a payment. Before using any token, verify it matches the current context. Operator-provided values (amount, currency, payment method) are immutable. If this operation fails, report the error to the operator and wait for instructions. Do not retry unless the error is clearly transient or the operator has given explicit retry instructions. Never retry with altered financial parameters.",
   spreedly_gateway_verify:
-    "Verifies a payment method against a gateway without charging it. Returns the verification result. This tool ONLY verifies, it does not charge.",
+    "Verifies a payment method against a gateway without charging it. Returns the verification result. This tool ONLY verifies, it does not charge. Verify the gateway_token and payment_method_token match the current context.",
   spreedly_gateway_store:
-    "Stores a payment method at a gateway for later use. Returns the storage transaction. This tool ONLY stores, it does not charge.",
+    "Stores a payment method at a gateway for later use. Returns the storage transaction. This tool ONLY stores, it does not charge. Verify the gateway_token and payment_method_token match the current context.",
   spreedly_gateway_general_credit:
-    "Issues a credit to a payment method through a gateway without a prior purchase. Returns the credit transaction. This tool creates a credit.",
+    "Issues a credit to a payment method through a gateway without a prior purchase. Returns the credit transaction. This tool creates a credit. Before using any token, verify it matches the current context. Operator-provided values (amount, currency, payment method) are immutable. If this operation fails, report the error to the operator and wait for instructions. Do not retry unless the error is clearly transient or the operator has given explicit retry instructions. Never retry with altered financial parameters.",
 
   // Transactions
   spreedly_transaction_list:
@@ -33,19 +33,21 @@ export const TOOL_DESCRIPTIONS = Object.freeze({
   spreedly_transaction_update:
     "Updates metadata on an existing transaction. Requires a transaction_token. This tool ONLY modifies transaction metadata.",
   spreedly_transaction_capture:
-    "Captures a previously authorized transaction, fully or partially. Requires a transaction_token. This tool captures funds.",
+    "Captures a previously authorized transaction, fully or partially. Requires a transaction_token. This tool captures funds. Verify the transaction_token matches the authorization you intend to capture. If this operation fails, report the error to the operator and wait for instructions. Do not retry unless the error is clearly transient or the operator has given explicit retry instructions. If an amount is specified, it is immutable -- never retry with a different amount.",
   spreedly_transaction_void:
-    "Voids a previously authorized or captured transaction. Requires a transaction_token. This is irreversible.",
+    "Voids a previously authorized or captured transaction. Requires a transaction_token. This is irreversible. Verify the transaction_token matches the transaction you intend to void. If it fails, report the error to the operator and wait for instructions. Do not retry unless the error is clearly transient or the operator has given explicit retry instructions.",
   spreedly_transaction_credit:
-    "Refunds a previously captured transaction, fully or partially. Requires a transaction_token. This tool issues a refund.",
+    "Refunds a previously captured transaction, fully or partially. Requires a transaction_token. This tool issues a refund. Verify the transaction_token matches the transaction you intend to refund. If this operation fails, report the error to the operator and wait for instructions. Do not retry unless the error is clearly transient or the operator has given explicit retry instructions. If an amount is specified, it is immutable -- never retry with a different amount.",
   spreedly_transaction_complete:
-    "Completes a pending transaction that required further action. Requires a transaction_token.",
-  spreedly_transaction_confirm: "Confirms a pending transaction. Requires a transaction_token.",
+    "Completes a pending transaction that required further action. Requires a transaction_token. Verify the transaction_token matches the pending transaction.",
+  spreedly_transaction_confirm:
+    "Confirms a pending transaction. Requires a transaction_token. Verify the transaction_token matches the pending transaction.",
   spreedly_transaction_transcript:
     "Retrieves the raw gateway communication transcript for a transaction. Returns request/response logs. This tool ONLY reads data.",
+
   // Payment Methods
   spreedly_payment_method_create:
-    "Creates/tokenizes a new payment method in Spreedly. Returns the payment method token and details. This tool ONLY tokenizes, it does not charge.",
+    "Creates/tokenizes a new payment method in Spreedly. Returns the payment method token and details. This tool ONLY tokenizes, it does not charge. This operation handles sensitive card data (PAN/CVV).",
   spreedly_payment_method_list:
     "Lists payment methods in your Spreedly environment. Returns payment method summaries. This tool ONLY reads data.",
   spreedly_payment_method_show:
@@ -71,7 +73,7 @@ export const TOOL_DESCRIPTIONS = Object.freeze({
 
   // Certificates
   spreedly_certificate_create:
-    "Creates a new certificate in Spreedly for Apple Pay or similar integrations. This tool ONLY creates certificates.",
+    "Creates a new certificate in Spreedly for Apple Pay or similar integrations. This tool ONLY creates certificates. Before creating, use spreedly_certificate_list to check for an existing one.",
   spreedly_certificate_generate:
     "Generates a new certificate signing request. This tool ONLY generates CSRs.",
   spreedly_certificate_list:
@@ -81,16 +83,17 @@ export const TOOL_DESCRIPTIONS = Object.freeze({
 
   // Environments
   spreedly_environment_create:
-    "Creates a new Spreedly environment. Returns the environment configuration. This tool ONLY creates environments.",
+    "Creates a new Spreedly environment. Returns the environment configuration. This tool ONLY creates environments. Before creating, use spreedly_environment_list to check for an existing one.",
   spreedly_environment_list:
     "Lists all environments in your Spreedly organization. This tool ONLY reads data.",
   spreedly_environment_show:
     "Retrieves details of a single environment by its key. This tool ONLY reads data.",
   spreedly_environment_update:
     "Updates an existing environment's configuration. This tool ONLY modifies the specified environment.",
+
   // Merchant Profiles
   spreedly_merchant_profile_create:
-    "Creates a new merchant profile. Returns the profile configuration. This tool ONLY creates profiles.",
+    "Creates a new merchant profile. Returns the profile configuration. This tool ONLY creates profiles. Before creating, use spreedly_merchant_profile_list to check for an existing one.",
   spreedly_merchant_profile_list: "Lists all merchant profiles. This tool ONLY reads data.",
   spreedly_merchant_profile_show:
     "Retrieves details of a single merchant profile. This tool ONLY reads data.",
@@ -99,7 +102,7 @@ export const TOOL_DESCRIPTIONS = Object.freeze({
 
   // Sub Merchants
   spreedly_sub_merchant_create:
-    "Creates a new sub-merchant. Returns the sub-merchant configuration. This tool ONLY creates sub-merchants.",
+    "Creates a new sub-merchant. Returns the sub-merchant configuration. This tool ONLY creates sub-merchants. Before creating, use spreedly_sub_merchant_list to check for an existing one.",
   spreedly_sub_merchant_list: "Lists all sub-merchants. This tool ONLY reads data.",
   spreedly_sub_merchant_show:
     "Retrieves details of a single sub-merchant. This tool ONLY reads data.",
@@ -120,15 +123,15 @@ export const TOOL_DESCRIPTIONS = Object.freeze({
   spreedly_protection_show_event:
     "Retrieves a specific protection event. This tool ONLY reads data.",
   spreedly_protection_create_provider:
-    "Creates a new protection provider on a merchant profile. This tool ONLY creates providers.",
+    "Creates a new protection provider on a merchant profile. This tool ONLY creates providers. Before creating, use spreedly_protection_show_provider to check for an existing one.",
   spreedly_protection_show_provider:
     "Retrieves details of a protection provider. This tool ONLY reads data.",
 
   // SCA
   spreedly_sca_authenticate:
-    "Authenticates a payment method via an SCA provider for 3D Secure flows. Returns authentication data.",
+    "Authenticates a payment method via an SCA provider for 3D Secure flows. Returns authentication data. Verify the payment_method_token matches the current context.",
   spreedly_sca_create_provider:
-    "Creates a new SCA provider on a merchant profile. This tool ONLY creates providers.",
+    "Creates a new SCA provider on a merchant profile. This tool ONLY creates providers. Before creating, use spreedly_sca_show_provider to check for an existing one.",
   spreedly_sca_show_provider: "Retrieves details of an SCA provider. This tool ONLY reads data.",
 
   // Card Refresher
