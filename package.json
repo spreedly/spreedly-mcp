@@ -20,7 +20,8 @@
     "dist",
     "README.md",
     "LICENSE",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "DISCLAIMER.md"
   ],
   "engines": {
     "node": ">=18.0.0"
