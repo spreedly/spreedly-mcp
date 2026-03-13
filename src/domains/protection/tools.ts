@@ -18,6 +18,8 @@ export const protectionTools: ToolDefinition[] = [
   {
     name: "spreedly_protection_forward_claim",
     description: TOOL_DESCRIPTIONS.spreedly_protection_forward_claim,
+    // Open world: forwards to an external protection provider
+    annotations: { destructiveHint: false, idempotentHint: false, openWorldHint: true },
     schema: ForwardClaimSchema.shape,
     handler: async (params, { transport }) => {
       const { transaction_token, claim } = params as {
@@ -33,6 +35,7 @@ export const protectionTools: ToolDefinition[] = [
   {
     name: "spreedly_protection_list_events",
     description: TOOL_DESCRIPTIONS.spreedly_protection_list_events,
+    annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ListProtectionEventsSchema.shape,
     handler: async (params, { transport }) => {
       const { since_token } = params as { since_token?: string };
@@ -44,6 +47,7 @@ export const protectionTools: ToolDefinition[] = [
   {
     name: "spreedly_protection_show_event",
     description: TOOL_DESCRIPTIONS.spreedly_protection_show_event,
+    annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ShowProtectionEventSchema.shape,
     handler: async (params, { transport }) => {
       const { event_token } = params as { event_token: string };
@@ -54,6 +58,7 @@ export const protectionTools: ToolDefinition[] = [
   {
     name: "spreedly_protection_create_provider",
     description: TOOL_DESCRIPTIONS.spreedly_protection_create_provider,
+    annotations: { destructiveHint: false, idempotentHint: false, openWorldHint: false },
     schema: CreateProtectionProviderSchema.shape,
     handler: async (params, { transport }) => {
       const res = await transport.request("POST", "/protection/providers.json", { body: params });
@@ -63,6 +68,7 @@ export const protectionTools: ToolDefinition[] = [
   {
     name: "spreedly_protection_show_provider",
     description: TOOL_DESCRIPTIONS.spreedly_protection_show_provider,
+    annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ShowProtectionProviderSchema.shape,
     handler: async (params, { transport }) => {
       const { protection_provider_token } = params as { protection_provider_token: string };

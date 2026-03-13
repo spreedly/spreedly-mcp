@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createServer } from "../src/server.js";
+import { createServer, SERVER_INSTRUCTIONS } from "../src/server.js";
 import { createMockTransport } from "./helpers/transport.js";
 import type { ToolPolicyConfig } from "../src/security/toolPolicy.js";
 
@@ -50,5 +50,21 @@ describe("createServer", () => {
         environmentKey: 123,
       }),
     ).toThrow("createServer requires");
+  });
+});
+
+describe("SERVER_INSTRUCTIONS", () => {
+  it("is a non-empty string", () => {
+    expect(typeof SERVER_INSTRUCTIONS).toBe("string");
+    expect(SERVER_INSTRUCTIONS.length).toBeGreaterThan(100);
+  });
+
+  it("contains key sections for consuming agents", () => {
+    expect(SERVER_INSTRUCTIONS).toContain("Terminology");
+    expect(SERVER_INSTRUCTIONS).toContain("Error Handling");
+    expect(SERVER_INSTRUCTIONS).toContain("Tool Access Policy");
+    expect(SERVER_INSTRUCTIONS).toContain("Should I Reuse a Token");
+    expect(SERVER_INSTRUCTIONS).toContain("Common Workflows");
+    expect(SERVER_INSTRUCTIONS).toContain("Amount Format");
   });
 });

@@ -6,6 +6,7 @@ export const networkTokenizationTools: ToolDefinition[] = [
   {
     name: "spreedly_network_tokenization_card_metadata",
     description: TOOL_DESCRIPTIONS.spreedly_network_tokenization_card_metadata,
+    annotations: { readOnlyHint: true, openWorldHint: false },
     schema: CardMetadataSchema.shape,
     handler: async (params, { transport }) => {
       const { payment_method_token } = params as { payment_method_token: string };
@@ -19,6 +20,7 @@ export const networkTokenizationTools: ToolDefinition[] = [
   {
     name: "spreedly_network_tokenization_token_status",
     description: TOOL_DESCRIPTIONS.spreedly_network_tokenization_token_status,
+    annotations: { readOnlyHint: true, openWorldHint: false },
     schema: TokenStatusSchema.shape,
     handler: async (params, { transport }) => {
       const { payment_method_token } = params as { payment_method_token: string };

@@ -17,6 +17,7 @@ export const merchantProfileTools: ToolDefinition[] = [
   {
     name: "spreedly_merchant_profile_create",
     description: TOOL_DESCRIPTIONS.spreedly_merchant_profile_create,
+    annotations: { destructiveHint: false, idempotentHint: false, openWorldHint: false },
     schema: CreateMerchantProfileSchema.shape,
     handler: async (params, { transport }) => {
       const res = await transport.request("POST", "/merchant_profiles.json", { body: params });
@@ -26,6 +27,7 @@ export const merchantProfileTools: ToolDefinition[] = [
   {
     name: "spreedly_merchant_profile_list",
     description: TOOL_DESCRIPTIONS.spreedly_merchant_profile_list,
+    annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ListMerchantProfilesSchema.shape,
     handler: async (params, { transport }) => {
       const { since_token } = params as { since_token?: string };
@@ -37,6 +39,7 @@ export const merchantProfileTools: ToolDefinition[] = [
   {
     name: "spreedly_merchant_profile_show",
     description: TOOL_DESCRIPTIONS.spreedly_merchant_profile_show,
+    annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ShowMerchantProfileSchema.shape,
     handler: async (params, { transport }) => {
       const { merchant_profile_token } = params as { merchant_profile_token: string };
@@ -50,6 +53,7 @@ export const merchantProfileTools: ToolDefinition[] = [
   {
     name: "spreedly_merchant_profile_update",
     description: TOOL_DESCRIPTIONS.spreedly_merchant_profile_update,
+    annotations: { destructiveHint: true, idempotentHint: true, openWorldHint: false },
     schema: UpdateMerchantProfileSchema.shape,
     handler: async (params, { transport }) => {
       const { merchant_profile_token, merchant_profile } = params as {
