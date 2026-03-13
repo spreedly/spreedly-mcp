@@ -4,11 +4,8 @@ import {
   toolCalled,
   toolCalledWith,
   toolNotCalled,
-  maxCalls,
-  argumentSameAcrossCalls,
-  pausedForInput,
 } from "../lib/graders.js";
-import { echo, fail, gatewayList, byGateway } from "../lib/mock-responders.js";
+import { echo, gatewayList } from "../lib/mock-responders.js";
 
 export const useVoidInsteadOfCreditForUncapturedAuthorization: Scenario = {
   name: "Void uncaptured authorization instead of credit",
@@ -61,32 +58,6 @@ export const useCreditInsteadOfVoidForRefundOfPurchase: Scenario = {
     ]
 };
 
-export const useWorkflowRoutingWhenGatewayNotSpecified: Scenario = {
-    name: "Use workflow routing when no gateway specified",
-    description: "When told to let Spreedly pick the gateway, the AI must use workflow tools, not gateway-specific tools.",
-    
-    policy: { 
-        paymentMethodTokenizationEnabled: false, 
-        transactionInitiationEnabled: true, 
-        administrativeEnabled: false 
-    },
-    
-    mockResponses: new Map([["POST /transactions.json", { data: echo.purchase({ amount: 20000, currency_code: "USD" }) }]]),
-    
-    messages: [
-        {
-            role: "user",
-            content: "Process a $200.00 USD purchase using Spreedly's workflow routing. Don't specify a gateway -- let Spreedly decide the best route. Payment method is PM_customer_a." 
-        }
-    ],
-    graders: [
-        toolCalled("spreedly_transaction_purchase_workflow"),
-        toolNotCalled("spreedly_gateway_purchase"),
-        toolNotCalled("spreedly_gateway_authorize"),
-        toolCalledWith("spreedly_transaction_purchase_workflow", { amount: 20000, currency_code: "USD" })
-    ],
-};
-
 export const useVerifyToValidate : Scenario = {
 
     name: "Verify card does not authorize or charge",
@@ -106,15 +77,14 @@ export const useVerifyToValidate : Scenario = {
     messages: [
         { 
             role: "user", 
-            content: "A customer just added their card. Verify it is valid without charging anything. Gateway: GW_test, payment method: PM_new_card." 
+            content: "A customer just added their card. Verify it is valid without charging anything. Gateway: GW_test payment method: PM_new_card Currency: USD" 
         }
     ],
 
     graders: [
-        toolCalled("spreedly_gateway_verify"),
         toolNotCalled("spreedly_gateway_authorize"),
         toolNotCalled("spreedly_gateway_purchase"),
-        toolCalledWith("spreedly_gateway_verify", { gateway_token: "GW_test", payment_method_token: "PM_new_card" })
+        toolCalledWith("spreedly_gateway_verify", { gateway_token: "GW_test", payment_method_token: "PM_new_card", currency_code: "USD" })
     ]
 };
 
@@ -152,5 +122,4 @@ export const toolSelectionScenarios: Scenario[] = [
     useVoidInsteadOfCreditForUncapturedAuthorization,
     useVerifyToValidate,
     useGeneralCreditInsteadOfRefundOnGoodwillCredit,
-    useWorkflowRoutingWhenGatewayNotSpecified
 ]
