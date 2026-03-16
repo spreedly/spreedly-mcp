@@ -112,9 +112,7 @@ export const useAmountParamForPartialCapture: Scenario = {
     administrativeEnabled: false,
   },
 
-  mockResponses: new Map([
-    ["POST /transactions/*/capture.json", echo.capture({ amount: 6000 })],
-  ]),
+  mockResponses: new Map([["POST /transactions/*/capture.json", echo.capture({ amount: 6000 })]]),
 
   messages: [
     {
