@@ -42,6 +42,13 @@ export function createMockTransport(responses: Map<string, MockResponseValue> = 
         throw new SpreedlyNotFoundError(`No mock response for ${key}`);
       }
       const resolved = typeof raw === "function" ? raw(method, path, options) : raw;
+      if (typeof resolved.data === "function") {
+        throw new Error(
+          `Mock for ${key} returned a function as "data". ` +
+            `Did you accidentally wrap an echo helper in { data: echo.xxx(...) }? ` +
+            `Pass the echo helper directly as the map value instead.`,
+        );
+      }
       return {
         data: resolved.data as T,
         status: resolved.status ?? 200,

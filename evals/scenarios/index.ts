@@ -2,6 +2,9 @@ import { tokenReuseScenarios } from "./token-reuse.js";
 import { policyEnforcementScenarios } from "./policy-enforcement.js";
 import { wastefulPatternScenarios } from "./wasteful-patterns.js";
 import { operatorFidelityScenarios } from "./operator-fidelity.js";
+import { toolSelectionScenarios } from "./tool-selection.js";
+import { multiStepWorkflows } from "./multi-step-workflows.js";
+import { parameterSelection } from "./paremter-selection.js";
 import type { Scenario } from "../lib/types.js";
 
 export const allScenarios: Scenario[] = [
@@ -16,4 +19,7 @@ export const scenarioGroups: Record<string, Scenario[]> = {
   "policy-enforcement": policyEnforcementScenarios,
   "wasteful-patterns": wastefulPatternScenarios,
   "operator-fidelity": operatorFidelityScenarios,
+  "tool-selection": toolSelectionScenarios,
+  "multi-step-workflows": multiStepWorkflows,
+  "parameter-selection": parameterSelection,
 };

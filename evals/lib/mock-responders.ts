@@ -59,6 +59,12 @@ function transactionOp(transactionType: string, defaults: Overrides = {}): MockR
 
 // ---------------------------------------------------------------------------
 // Successful echo responders
+//
+// Each helper returns a MockResponseFn (a function). Use them directly as
+// mockResponses map values — do NOT wrap in { data: ... }:
+//
+//   CORRECT:  ["POST /gateways/*/purchase.json", echo.purchase()]
+//   WRONG:    ["POST /gateways/*/purchase.json", { data: echo.purchase() }]
 // ---------------------------------------------------------------------------
 
 export const echo = {
