@@ -21,5 +21,5 @@ export const scenarioGroups: Record<string, Scenario[]> = {
   "operator-fidelity": operatorFidelityScenarios,
   "tool-selection": toolSelectionScenarios,
   "multi-step-workflows": multiStepWorkflows,
-  "parameter-selection": parameterSelection
+  "parameter-selection": parameterSelection,
 };
