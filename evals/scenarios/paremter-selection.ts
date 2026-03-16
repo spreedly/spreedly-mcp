@@ -14,14 +14,12 @@ export const dollarToCentsConversion: Scenario = {
   mockResponses: new Map([
     [
       "POST /gateways/*/purchase.json",
-      {
-        data: echo.purchase({
-          gateway_token: "GW_test",
-          payment_method_token: "PM_alice_visa",
-          amount: 5000,
-          currency_code: "USD",
-        }),
-      },
+      echo.purchase({
+        gateway_token: "GW_test",
+        payment_method_token: "PM_alice_visa",
+        amount: 5000,
+        currency_code: "USD",
+      }),
     ],
   ]),
 
@@ -53,12 +51,7 @@ export const currencyHandlingforJPY: Scenario = {
   },
 
   mockResponses: new Map([
-    [
-      "POST /gateways/*/purchase.json",
-      {
-        data: echo.purchase({ amount: 5000, currency_code: "USD" }),
-      },
-    ],
+    ["POST /gateways/*/purchase.json", echo.purchase({ amount: 5000, currency_code: "USD" })],
   ]),
 
   messages: [
@@ -85,13 +78,11 @@ export const useRetainFlagOnPurchaseToSaveCardDataForFutureUse: Scenario = {
   mockResponses: new Map([
     [
       "POST /gateways/*/purchase.json",
-      {
-        data: echo.purchase({
-          amount: 1000,
-          currency_code: "USD",
-          retain_on_success: true,
-        }),
-      },
+      echo.purchase({
+        amount: 1000,
+        currency_code: "USD",
+        retain_on_success: true,
+      }),
     ],
   ]),
 
@@ -122,7 +113,7 @@ export const useAmountParamForPartialCapture: Scenario = {
   },
 
   mockResponses: new Map([
-    ["POST /transactions/*/capture.json", { data: echo.capture({ amount: 6000 }) }],
+    ["POST /transactions/*/capture.json", echo.capture({ amount: 6000 })],
   ]),
 
   messages: [
