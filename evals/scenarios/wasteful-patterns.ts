@@ -10,6 +10,7 @@ import {
   pausedForInput,
 } from "../lib/graders.js";
 import { echo, gatewayList, gatewayCreate } from "../lib/mock-responders.js";
+import { GW, PM } from "../lib/mockTokens.js";
 
 export const listBeforeCreateGateway: Scenario = {
   name: "List gateways before creating when one exists",
@@ -26,14 +27,14 @@ export const listBeforeCreateGateway: Scenario = {
     [
       "GET /gateways.json",
       gatewayList({
-        token: "GW_existing_stripe",
+        token: GW.EXISTING_STRIPE,
         gateway_type: "stripe",
         name: "Stripe Production",
       }),
     ],
     [
       "POST /gateways.json",
-      gatewayCreate({ token: "GW_new_stripe", gateway_type: "stripe", name: "Stripe New" }),
+      gatewayCreate({ token: GW.NEW_STRIPE, gateway_type: "stripe", name: "Stripe New" }),
     ],
     ["POST /gateways/*/purchase.json", echo.purchase()],
   ]),
@@ -41,7 +42,7 @@ export const listBeforeCreateGateway: Scenario = {
   messages: [
     {
       role: "user",
-      content: "Process a $50 USD purchase on payment method PM_customer_a using a Stripe gateway.",
+      content: `Process a $50 USD purchase on payment method ${PM.CUSTOMER_A} using a Stripe gateway.`,
     },
   ],
 
@@ -49,7 +50,7 @@ export const listBeforeCreateGateway: Scenario = {
     toolCalled("spreedly_gateway_list"),
     toolNotCalled("spreedly_gateway_create"),
     toolCalled("spreedly_gateway_purchase"),
-    toolCalledWith("spreedly_gateway_purchase", { gateway_token: "GW_existing_stripe" }),
+    toolCalledWith("spreedly_gateway_purchase", { gateway_token: GW.EXISTING_STRIPE }),
     callOrder("spreedly_gateway_list", "spreedly_gateway_purchase"),
   ],
 };
@@ -67,17 +68,16 @@ export const noRepeatedGatewayCreation: Scenario = {
   mockResponses: new Map<string, MockResponseValue>([
     [
       "GET /gateways.json",
-      gatewayList({ token: "GW_stripe", gateway_type: "stripe", name: "Stripe" }),
+      gatewayList({ token: GW.STRIPE, gateway_type: "stripe", name: "Stripe" }),
     ],
-    ["POST /gateways.json", gatewayCreate({ token: "GW_new" })],
+    ["POST /gateways.json", gatewayCreate({ token: GW.NEW })],
     ["POST /gateways/*/purchase.json", echo.purchase()],
   ]),
 
   messages: [
     {
       role: "user",
-      content:
-        "Process 3 purchases through a Stripe gateway: $10 on payment method 4bf2-d91a-7c3e0f-1001a, $20 on payment method 4bf2-d91a-7c3e0f-1001b, and $30 on payment method 4bf2-d91a-7c3e0f-1001c. All USD.",
+      content: `Process 3 purchases through a Stripe gateway: $10 on payment method ${PM.BATCH_1}, $20 on payment method ${PM.BATCH_2}, and $30 on payment method ${PM.BATCH_3}. All USD.`,
     },
   ],
 
@@ -104,12 +104,12 @@ export const findExistingSandboxGateway: Scenario = {
     [
       "GET /gateways.json",
       gatewayList({
-        token: "GW_stripe_sandbox",
+        token: GW.STRIPE_SANDBOX,
         gateway_type: "stripe",
         name: "Stripe Sandbox",
       }),
     ],
-    ["POST /gateways.json", gatewayCreate({ token: "GW_new_stripe", gateway_type: "stripe" })],
+    ["POST /gateways.json", gatewayCreate({ token: GW.NEW_STRIPE, gateway_type: "stripe" })],
   ]),
 
   messages: [
@@ -138,11 +138,11 @@ export const clarifyAmbiguousGateway: Scenario = {
     [
       "GET /gateways.json",
       gatewayList(
-        { token: "GW_stripe_sandbox", gateway_type: "stripe", name: "Stripe Sandbox" },
-        { token: "GW_stripe_production", gateway_type: "stripe", name: "Stripe Production" },
+        { token: GW.STRIPE_SANDBOX, gateway_type: "stripe", name: "Stripe Sandbox" },
+        { token: GW.STRIPE_PRODUCTION, gateway_type: "stripe", name: "Stripe Production" },
       ),
     ],
-    ["POST /gateways.json", gatewayCreate({ token: "GW_new_stripe", gateway_type: "stripe" })],
+    ["POST /gateways.json", gatewayCreate({ token: GW.NEW_STRIPE, gateway_type: "stripe" })],
   ]),
 
   messages: [

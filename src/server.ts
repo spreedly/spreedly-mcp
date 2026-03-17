@@ -44,7 +44,7 @@ export function createServer(
         const schema = z.object(tool.schema).strict();
         return schema.parse(raw) as Record<string, unknown>;
       },
-      { silent },
+      { silent, parseError: tool.parseError },
     );
 
     server.registerTool(

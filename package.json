@@ -35,6 +35,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test:evals": "tsx evals/run.ts",
+    "inspect": "npx @modelcontextprotocol/inspector node dist/bin.js",
     "prepublishOnly": "npm run build"
   },
   "keywords": [

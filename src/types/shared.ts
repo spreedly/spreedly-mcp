@@ -1,6 +1,7 @@
 import type { ZodTypeAny } from "zod";
 import type { ToolAnnotations } from "@modelcontextprotocol/sdk/spec.types.js";
 import type { SpreedlyTransport } from "../transport/types.js";
+import type { SpreedlyError } from "../transport/errors.js";
 
 export type { ToolAnnotations };
 
@@ -95,4 +96,12 @@ export interface ToolDefinition {
     params: Record<string, unknown>,
     ctx: { transport: SpreedlyTransport },
   ) => Promise<unknown>;
+  /**
+   * Optional per-tool hook to extract structured fields from a SpreedlyError.
+   * Return value is merged into the agent-facing error output alongside
+   * `httpStatusCode` and `message`. When omitted, the default parser extracts
+   * `fieldErrors`, `transactionToken`, and `retryAfterMs` from typed error
+   * subclass properties.
+   */
+  parseError?: (error: SpreedlyError) => Record<string, unknown>;
 }

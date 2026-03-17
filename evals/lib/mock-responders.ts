@@ -79,7 +79,7 @@ export const echo = {
 };
 
 // ---------------------------------------------------------------------------
-// Failure responders
+// Failure responders (business-level: HTTP 200, succeeded: false)
 // ---------------------------------------------------------------------------
 
 export const fail = {
@@ -104,6 +104,59 @@ export const fail = {
       message: "Transaction declined by the payment processor.",
       ...overrides,
     }),
+};
+
+// ---------------------------------------------------------------------------
+// HTTP error responders (4xx/5xx — triggers mapHttpStatusToError in the mock
+// transport, producing the same SpreedlyError subclasses as the real transport)
+// ---------------------------------------------------------------------------
+
+export const httpError = {
+  validation: (
+    errors: Array<{ key: string; message: string; attribute?: string }>,
+  ): MockResponseEntry => ({
+    data: { errors },
+    status: 422,
+  }),
+
+  validationFields: (fieldErrors: Record<string, string[]>): MockResponseEntry => ({
+    data: { errors: fieldErrors },
+    status: 422,
+  }),
+
+  auth: (
+    message = "Unable to authenticate using the given environment_key and access_token.",
+  ): MockResponseEntry => ({
+    data: { error: message },
+    status: 401,
+  }),
+
+  paymentRequired: (
+    message = "Payment required.",
+    transactionToken?: string,
+  ): MockResponseEntry => ({
+    data: {
+      errors: [{ key: "errors.payment_method", message }],
+      ...(transactionToken && { transaction_token: transactionToken }),
+    },
+    status: 402,
+  }),
+
+  notFound: (resource?: string): MockResponseEntry => ({
+    data: { error: resource ? `Not found: ${resource}` : "Not found" },
+    status: 404,
+  }),
+
+  rateLimit: (retryAfterSeconds = 30): MockResponseEntry => ({
+    data: { error: "Rate limit exceeded" },
+    status: 429,
+    headers: { "retry-after": String(retryAfterSeconds) },
+  }),
+
+  gatewayUnavailable: (status: 502 | 503 | 504 = 503): MockResponseEntry => ({
+    data: { error: "Service temporarily unavailable" },
+    status,
+  }),
 };
 
 // ---------------------------------------------------------------------------

@@ -81,9 +81,73 @@ export function sanitizeParams(params: Record<string, unknown>): Record<string, 
   return result;
 }
 
-export function redactCredentials(text: string): string {
-  return text
-    .replace(/Basic\s+[A-Za-z0-9+/=]+/g, "Basic [REDACTED]")
-    .replace(/Bearer\s+[A-Za-z0-9._-]+/g, "Bearer [REDACTED]")
-    .replace(/[A-Za-z0-9+/]{20,}={0,2}/g, "[REDACTED]");
+const CREDENTIAL_PATTERNS = [
+  /Basic\s+[A-Za-z0-9+/=]+/g,
+  /Bearer\s+[A-Za-z0-9._-]+/g,
+  /[A-Za-z0-9+/]{20,}={0,2}/g,
+];
+
+/**
+ * Spreedly resource identifiers that are safe to preserve in agent-facing
+ * output. Keep this as an explicit allowlist rather than a pattern so
+ * credential-shaped fields like `api_key` or `private_key` are still redacted.
+ */
+const SAFE_IDENTIFIER_FIELDS = new Set([
+  "token",
+  "gateway_token",
+  "payment_method_token",
+  "transaction_token",
+  "transactionToken",
+  "merchant_profile_token",
+  "certificate_token",
+  "protection_provider_token",
+  "sca_provider_token",
+  "sca_provider_key",
+  "event_token",
+  "inquiry_token",
+  "since_token",
+  "environment_key",
+  "sub_merchant_key",
+  "requestId",
+  "eventId",
+]);
+
+function isSafeIdentifierField(fieldName: string): boolean {
+  return SAFE_IDENTIFIER_FIELDS.has(fieldName);
+}
+
+function redactString(value: string): string {
+  let result = value;
+  for (const pattern of CREDENTIAL_PATTERNS) {
+    result = result.replace(new RegExp(pattern.source, pattern.flags), "[REDACTED]");
+  }
+  return result;
+}
+
+/**
+ * Recursively redacts credential-like values in an object, preserving values
+ * in known-safe identifier fields (tokens, keys). The aggressive catch-all
+ * regex acts as a safety net for any non-identifier field that contains a
+ * credential-looking string.
+ */
+export function redactSensitiveValues(value: unknown, fieldName?: string): unknown {
+  if (value === null || value === undefined) return value;
+
+  if (typeof value === "string") {
+    return fieldName && isSafeIdentifierField(fieldName) ? value : redactString(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => redactSensitiveValues(item, fieldName));
+  }
+
+  if (typeof value === "object") {
+    const result: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
+      result[key] = redactSensitiveValues(val, key);
+    }
+    return result;
+  }
+
+  return value;
 }

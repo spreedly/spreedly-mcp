@@ -26,7 +26,7 @@ The server requires two environment variables:
 - \`SPREEDLY_ENVIRONMENT_KEY\` -- Your Spreedly environment key
 - \`SPREEDLY_ACCESS_SECRET\` -- Your Spreedly access secret
 
-These are set in the MCP client configuration, not passed as tool parameters. If authentication fails, you will receive an error with code \`AUTH_ERROR\`.
+These are set in the MCP client configuration, not passed as tool parameters. If authentication fails, you will receive an error with \`httpStatusCode: 401\`.
 
 ## Tool Naming Convention
 
@@ -34,19 +34,36 @@ All tools follow the pattern: \`spreedly_<domain>_<action>\`
 
 Domains: \`gateway\`, \`transaction\`, \`payment_method\`, \`certificate\`, \`environment\`, \`merchant_profile\`, \`sub_merchant\`, \`event\`, \`protection\`, \`sca\`, \`card_refresher\`, \`network_tokenization\`
 
+## Response Format
+
+All tool responses include a \`_metadata\` object with operational context:
+
+- \`durationMs\` -- Time the tool call took in milliseconds
+- \`httpStatusCode\` -- The HTTP status code from the Spreedly API (when applicable)
+- \`requestId\` -- The Spreedly \`x-request-id\` header (when present, useful for support requests)
+
 ## Error Handling
 
-Errors follow a structured format:
+Error responses have \`isError: true\` and a structured JSON body:
 
-- \`AUTH_ERROR\` (401) -- Invalid credentials
-- \`FORBIDDEN\` (403) -- Insufficient permissions
-- \`NOT_FOUND\` (404) -- Resource does not exist
-- \`VALIDATION_ERROR\` (422) -- Invalid input, includes field-level details
-- \`RATE_LIMITED\` (429) -- Too many requests
-- \`GATEWAY_ERROR\` (502/503/504) -- Spreedly API temporarily unavailable
-- \`PAYMENT_ERROR\` (402) -- Payment declined
+\`\`\`
+{ "error": { "httpStatusCode": 401, "message": "..." }, "_metadata": { ... } }
+\`\`\`
 
-When you receive an error, the message is actionable. Do not retry auth errors; verify credentials instead.
+\`httpStatusCode\` is a number when the Spreedly API returned a response, or \`null\` when the failure occurred before any HTTP response was received. Pre-HTTP failures may also include \`errorType\` such as \`"timeout"\`, \`"network"\`, or \`"internal"\`.
+
+HTTP status codes and their meaning:
+
+- 401 -- Invalid credentials. Do not retry; verify credentials instead.
+- 402 -- Payment declined. May include \`transactionToken\` referencing the failed transaction.
+- 403 -- Insufficient permissions.
+- 404 -- Resource does not exist.
+- 422 -- Invalid input. May include \`fieldErrors\` with per-field details.
+- 429 -- Too many requests. Includes \`retryAfterMs\` indicating how long to wait before retrying.
+- 502/503/504 -- Spreedly API temporarily unavailable.
+- \`null\` -- Failure before any HTTP response was received. Use \`errorType\` when present to distinguish timeout/network/internal failures, report the error to the operator, and do not retry unless the operator already provided fallback instructions.
+
+When you receive an error, the \`message\` is actionable. Use \`httpStatusCode\` to decide behavior: do not retry 401 or 402, report 422 field details to the operator, respect \`retryAfterMs\` on 429, and treat 502/503/504 as transient — if the operator provided fallback instructions (e.g., a different gateway to try), follow them immediately; otherwise report the error.
 
 ## Tool Access Policy
 
@@ -62,58 +79,37 @@ Read-only tools (list, show, transcript) are always available regardless of flag
 
 If a tool you expect is missing, the corresponding flag has not been enabled in the MCP client configuration.
 
-## Tool Capabilities and Constraints
+## Discovering Tools
 
-**Note:** The tools listed below may not all be available depending on the Tool Access Policy configuration. If a tool is not registered, it will not appear in your tool list.
-
-### Read-Only Tools (always available)
-
-- All \`_list\` and \`_show\` tools
-- \`spreedly_gateway_list_supported\`
-- \`spreedly_transaction_transcript\`
-- \`spreedly_network_tokenization_card_metadata\`
-- \`spreedly_network_tokenization_token_status\`
-
-### Write Tools (create or modify resources)
-
-- \`_create\`, \`_update\`, \`_retain\` tools
-- \`spreedly_gateway_authorize\`, \`_purchase\`, \`_verify\`, \`_store\`, \`_general_credit\`
-- \`spreedly_transaction_capture\`, \`_void\`, \`_credit\`, \`_complete\`, \`_confirm\`
-- \`spreedly_payment_method_recache\`, \`_update_gratis\`, \`_delete_metadata\`
-
-### Destructive Tools (irreversible)
-
-- \`spreedly_transaction_void\` -- Voids a transaction (cannot be undone)
+Use the tool list to see what is available -- names, descriptions, and annotations are self-describing. The \`_list\` / \`_show\` suffix indicates read-only tools; action suffixes (\`_authorize\`, \`_purchase\`, \`_capture\`, \`_void\`, etc.) indicate write or financial tools. Check each tool's \`annotations\` for \`readOnlyHint\`, \`destructiveHint\`, and \`idempotentHint\` to understand its behavior.
 
 ## Should I Reuse a Token?
 
-Spreedly uses tokens to identify resources. Before reusing any token from a previous operation, ask: **"Is this the right resource for what I am doing right now?"** No token should be blindly reused -- every token requires you to consider whether the current context matches the context in which the token was obtained.
+Spreedly uses tokens to identify resources. When you have a token from a prior step, ask: **"What changed?"**
 
-### How to think about each token type
+- **Operator provided the token in this request** -- use it as given, no verification needed.
+- **Nothing changed** (e.g., retrying the same operation on a fallback gateway after a transient error) -- carry forward every parameter from the failed call (\`payment_method_token\`, \`amount\`, \`currency_code\`, etc.) and only change what the operator specified.
+- **Context changed** (different customer, merchant, or purpose) -- do not reuse; ask the operator if uncertain, especially for \`payment_method_token\` and \`transaction_token\`.
 
-| Token | What it represents | When to reuse | When NOT to reuse |
-| ------------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| \`gateway_token\` | A connection to a specific payment processor (e.g. Stripe, Braintree) | The current transaction should be routed to the same processor | The operator wants to use a different processor, or the environment has multiple gateways for different purposes (e.g. one for US, another for EU) |
-| \`sca_provider_key\` | A 3D Secure authentication provider | The same SCA provider applies to this transaction | A different SCA provider is needed (e.g. different provider for different card networks or regions) |
-| \`merchant_profile_token\` | A set of merchant business details | The transaction is on behalf of the same merchant | The transaction is on behalf of a different merchant (common when the operator is a payment facilitator) |
-| \`sub_merchant_key\` | A sub-merchant within a payment facilitator | The transaction is for the same sub-merchant | The transaction is for a different sub-merchant -- each sub-merchant represents a distinct merchant under the payment facilitator |
-| \`payment_method_token\` | A specific customer's (cardholder's) card or bank account | You are transacting for the **same customer** who owns this payment method | You are transacting for a **different customer** -- using the wrong token means charging the wrong person |
-| \`transaction_token\` | A specific authorization, purchase, or other transaction | You are performing a follow-up on **that exact transaction** (capture, void, refund) | You are working with a different transaction -- using the wrong token means voiding or refunding the wrong operation |
+Use this table to determine whether context has changed for each token type:
 
-### Key principles
-
-1. **Never assume -- verify.** If you have a token from a previous step, confirm it still applies. Did the operator switch customers? Switch merchants? Ask for a different gateway?
-2. **When in doubt, ask the operator.** It is always safer to confirm than to guess, especially for \`payment_method_token\` and \`transaction_token\` where mistakes have direct financial consequences. However, when the operator's request already contains all required parameters (amount, currency, payment method, gateway type or token), proceed with the operation -- do not re-confirm values they explicitly provided.
-3. **Do not recreate what already exists.** If the context has not changed and you have the right token, use it. Do not re-list gateways or recreate configuration objects for each transaction.
-4. **Do not create configuration objects per-transaction.** Gateways, SCA providers, merchant profiles, and sub-merchants are long-lived. If you need one and don't have the token, use the corresponding \`_list\` tool to find an existing one before creating a new one.
+| Token | Reuse when | Do not reuse when |
+| ------------------------ | ------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| \`gateway_token\` | Same processor is correct for this transaction | Operator wants a different processor or region |
+| \`payment_method_token\` | Same customer is being charged | Different customer -- wrong token means charging the wrong person |
+| \`transaction_token\` | Follow-up on that exact transaction (capture, void, refund) | Different transaction -- wrong token means voiding/refunding the wrong operation |
+| \`merchant_profile_token\` | Same merchant | Different merchant (common for payment facilitators) |
+| \`sub_merchant_key\` | Same sub-merchant | Different sub-merchant |
 
 ## Best Practices
 
-- **Never repeat a successful transaction.** Authorizations, purchases, captures, voids, and credits have real financial consequences. If a transaction tool call returns a successful result, that operation is done -- do not call it again with the same parameters. A duplicate call means a duplicate charge, hold, or refund.
-- **Perform only the operations requested.** When the operator asks for a set of transactions, execute each one exactly once and stop. Do not add extra operations, retry successful calls, or re-verify completed work.
-- **Do not retry failed operations unless instructed.** If a financial operation fails, report the error to the operator and wait for instructions. Do not retry unless you are certain the error was transient (e.g. a network timeout or temporary gateway unavailability) or the operator has given specific instructions about how to handle retry logic. Never retry with altered financial parameters -- the amount, currency, and payment method specified by the operator are immutable.
-- **Use the minimum permissions needed.** If you are only processing transactions, only \`TRANSACTION_INITIATION_ENABLED\` needs to be set to \`"true"\`.
-- **Check for existing configuration resources before creating.** If you need a \`gateway_token\` you don't already have, use \`spreedly_gateway_list\` to find an existing one before calling \`spreedly_gateway_create\`.
+- **Use operator-provided values directly.** When the request contains all required parameters (amount, currency, payment method, gateway token), proceed with the operation. Do not re-confirm values the operator explicitly provided.
+- **Never repeat a successful financial operation.** A duplicate call means a duplicate charge, hold, or refund. If a tool call returns a successful result, that operation is done.
+- **Financial parameters are immutable.** Never retry a failed operation with altered amount, currency, or payment method. Report the error and wait for instructions unless the failure is clearly transient.
+- **Honor pre-authorized fallback instructions.** When the operator's request includes contingency logic (e.g., "if it fails, retry on gateway X"), execute the fallback as your next tool call on the applicable error — do not pause, announce intent, or ask for confirmation. Carry forward every parameter from the failed call (\`payment_method_token\`, \`amount\`, \`currency_code\`, etc.) and only change what the operator specified.
+- **Perform only the operations requested.** Execute each requested operation once and stop. Do not add extra operations or re-verify completed work.
+- **Check for existing resources before creating.** Gateways, SCA providers, merchant profiles, and sub-merchants are long-lived. Use the corresponding \`_list\` tool before creating a new one.
+- **Use all applicable parameters.** Review each tool's full parameter list. If the operator's request maps to an optional parameter (e.g., \`retain_on_success\`, \`order_id\`, \`description\`), include it.
 
 ## Common Workflows
 

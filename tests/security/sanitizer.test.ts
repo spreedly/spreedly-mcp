@@ -4,7 +4,7 @@ import {
   containsInjectionAttempt,
   isValidTokenFormat,
   sanitizeParams,
-  redactCredentials,
+  redactSensitiveValues,
 } from "../../src/security/sanitizer.js";
 
 describe("sanitizeString", () => {
@@ -111,31 +111,151 @@ describe("sanitizeParams", () => {
   });
 });
 
-describe("redactCredentials", () => {
-  it("redacts Basic auth headers", () => {
-    expect(redactCredentials("Authorization: Basic dXNlcjpwYXNz")).toContain("[REDACTED]");
+describe("redactSensitiveValues", () => {
+  it("preserves values in explicitly allowlisted identifier fields", () => {
+    const obj = {
+      token: "2CJVSQ64VV8JC80QZ3GY15ZPJS",
+      gateway_token: "6BqMGQTRx4YKHV2Mj91sPkR3nMf",
+      payment_method_token: "2KtVWPNqR8yLXj6Fn73sDgB5mHe",
+      transactionToken: "3hLWMR8vTnKQJp5Zy29xGwD4bFc",
+      transaction_token: "7TnLMR8vTnKQJp5Zy29xGwD4bFd",
+      merchant_profile_token: "8MpLMR8vTnKQJp5Zy29xGwD4bFe",
+      certificate_token: "9CtLMR8vTnKQJp5Zy29xGwD4bFf",
+      protection_provider_token: "1PpLMR8vTnKQJp5Zy29xGwD4bFg",
+      sca_provider_token: "2SpLMR8vTnKQJp5Zy29xGwD4bFh",
+      sca_provider_key: "3SkLMR8vTnKQJp5Zy29xGwD4bFi",
+      event_token: "4EtLMR8vTnKQJp5Zy29xGwD4bFj",
+      inquiry_token: "5IqLMR8vTnKQJp5Zy29xGwD4bFk",
+      environment_key: "7PqXKSHnR4yLMj6Fz82tDgB5cWe",
+      sub_merchant_key: "9TwXMPKnR4yLQj7Fz52sDgC8bHa",
+      since_token: "ABCDEFGHIJKLMNOPQRSTUVWXYZab",
+      requestId: "abcdefghijklmnopqrstuvwxyz12",
+      eventId: "bcdefghijklmnopqrstuvwxyz123",
+    };
+    const result = redactSensitiveValues(obj) as Record<string, unknown>;
+    expect(result.token).toBe(obj.token);
+    expect(result.gateway_token).toBe(obj.gateway_token);
+    expect(result.payment_method_token).toBe(obj.payment_method_token);
+    expect(result.transactionToken).toBe(obj.transactionToken);
+    expect(result.transaction_token).toBe(obj.transaction_token);
+    expect(result.merchant_profile_token).toBe(obj.merchant_profile_token);
+    expect(result.certificate_token).toBe(obj.certificate_token);
+    expect(result.protection_provider_token).toBe(obj.protection_provider_token);
+    expect(result.sca_provider_token).toBe(obj.sca_provider_token);
+    expect(result.sca_provider_key).toBe(obj.sca_provider_key);
+    expect(result.event_token).toBe(obj.event_token);
+    expect(result.inquiry_token).toBe(obj.inquiry_token);
+    expect(result.environment_key).toBe(obj.environment_key);
+    expect(result.sub_merchant_key).toBe(obj.sub_merchant_key);
+    expect(result.since_token).toBe(obj.since_token);
+    expect(result.requestId).toBe(obj.requestId);
+    expect(result.eventId).toBe(obj.eventId);
   });
 
-  it("redacts Bearer tokens", () => {
-    expect(redactCredentials("Bearer eyJhbGciOiJIUzI1NiJ9.abc.def")).toContain("[REDACTED]");
+  it("redacts credential-like values in non-safe fields", () => {
+    const obj = {
+      login: "ABCDEFGHIJKLMNOPQRSTuvwxyz",
+      password: "SuperSecretCredential12345",
+      api_key: "FakeGatewayApiKeyValue1234567890",
+      secret_key: "FakeGatewaySecretKeyValue1234567890",
+      private_key: "FakeGatewayPrivateKeyValue1234567890",
+      public_key: "FakeGatewayPublicKeyValue1234567890",
+      access_secret: "FakeGatewayAccessSecret1234567890",
+      message: "Failed with Basic dXNlcjpwYXNzd29yZA== in header",
+    };
+    const result = redactSensitiveValues(obj) as Record<string, unknown>;
+    expect(result.login).toBe("[REDACTED]");
+    expect(result.password).toBe("[REDACTED]");
+    expect(result.api_key).toBe("[REDACTED]");
+    expect(result.secret_key).toBe("[REDACTED]");
+    expect(result.private_key).toBe("[REDACTED]");
+    expect(result.public_key).toBe("[REDACTED]");
+    expect(result.access_secret).toBe("[REDACTED]");
+    expect(result.message).toContain("[REDACTED]");
+    expect(result.message).not.toContain("dXNlcjpwYXNzd29yZA==");
   });
 
-  it("redacts long base64 strings", () => {
-    const longB64 = "A".repeat(50);
-    expect(redactCredentials(`secret: ${longB64}`)).toContain("[REDACTED]");
+  it("redacts nested credential values while preserving nested tokens", () => {
+    const obj = {
+      transaction: {
+        token: "3hLWMR8vTnKQJp5Zy29xGwD4bFc",
+        gateway_token: "6BqMGQTRx4YKHV2Mj91sPkR3nMf",
+        payment_method_token: "2KtVWPNqR8yLXj6Fn73sDgB5mHe",
+      },
+      gateway: {
+        credentials: {
+          login: "FakeGatewayCredentialForRedaction12345",
+        },
+      },
+    };
+    const result = redactSensitiveValues(obj) as Record<string, unknown>;
+    const txn = result.transaction as Record<string, unknown>;
+    expect(txn.token).toBe("3hLWMR8vTnKQJp5Zy29xGwD4bFc");
+    expect(txn.gateway_token).toBe("6BqMGQTRx4YKHV2Mj91sPkR3nMf");
+    expect(txn.payment_method_token).toBe("2KtVWPNqR8yLXj6Fn73sDgB5mHe");
+    const gw = result.gateway as Record<string, unknown>;
+    const creds = gw.credentials as Record<string, unknown>;
+    expect(creds.login).toContain("[REDACTED]");
   });
 
-  it("redacts base64 strings as short as 20 chars", () => {
-    const shortB64 = "A".repeat(20);
-    expect(redactCredentials(`key: ${shortB64}`)).toContain("[REDACTED]");
+  it("handles arrays, preserving field context from parent", () => {
+    const obj = {
+      gateways: [
+        { token: "6BqMGQTRx4YKHV2Mj91sPkR3nMf", name: "Test" },
+        { token: "9WqNHSTUy7ZLIV5Pk82tQlS6oNg", name: "Other" },
+      ],
+    };
+    const result = redactSensitiveValues(obj) as Record<string, unknown>;
+    const gws = result.gateways as Array<Record<string, unknown>>;
+    expect(gws[0].token).toBe("6BqMGQTRx4YKHV2Mj91sPkR3nMf");
+    expect(gws[1].token).toBe("9WqNHSTUy7ZLIV5Pk82tQlS6oNg");
   });
 
-  it("does not redact base64 strings shorter than 20 chars", () => {
-    const tooShort = "A".repeat(19);
-    expect(redactCredentials(`key: ${tooShort}`)).toBe(`key: ${tooShort}`);
+  it("leaves non-string primitives unchanged", () => {
+    const obj = { amount: 1000, succeeded: true, state: null };
+    expect(redactSensitiveValues(obj)).toEqual(obj);
   });
 
-  it("leaves short safe strings unchanged", () => {
-    expect(redactCredentials("amount: 100")).toBe("amount: 100");
+  it("leaves short strings unchanged (below 20-char threshold)", () => {
+    const obj = { message: "Succeeded!", state: "retained" };
+    expect(redactSensitiveValues(obj)).toEqual(obj);
+  });
+
+  it("redacts bare strings in non-safe context", () => {
+    expect(redactSensitiveValues("ABCDEFGHIJKLMNOPQRSTuvwxyz")).toBe("[REDACTED]");
+  });
+
+  it("preserves bare strings in safe field context", () => {
+    expect(redactSensitiveValues("ABCDEFGHIJKLMNOPQRSTuvwxyz", "gateway_token")).toBe(
+      "ABCDEFGHIJKLMNOPQRSTuvwxyz",
+    );
+  });
+
+  it("does not preserve values for non-allowlisted key fields", () => {
+    expect(redactSensitiveValues("FakeGatewayApiKeyValue1234567890", "api_key")).toBe("[REDACTED]");
+    expect(redactSensitiveValues("FakeGatewaySecretKeyValue1234567890", "secret_key")).toBe(
+      "[REDACTED]",
+    );
+  });
+
+  it("preserves long error messages with normal words", () => {
+    const obj = {
+      message:
+        "The payment method associated with this transaction is no longer valid. " +
+        "Please update the customer's billing information and retry the authorization request. " +
+        "Gateway responded with: card_declined_insufficient_funds.",
+    };
+    expect(redactSensitiveValues(obj)).toEqual(obj);
+  });
+
+  it("redacts a credential embedded in an otherwise normal error message", () => {
+    const obj = {
+      message:
+        "Gateway authentication failed using credentials ABCDEFGHIJKLMNOPQRSTuvwxyz for merchant account.",
+    };
+    const result = redactSensitiveValues(obj) as Record<string, unknown>;
+    expect(result.message).toContain("Gateway authentication failed using credentials");
+    expect(result.message).toContain("[REDACTED]");
+    expect(result.message).not.toContain("ABCDEFGHIJKLMNOPQRSTuvwxyz");
   });
 });

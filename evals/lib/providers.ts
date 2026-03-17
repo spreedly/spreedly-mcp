@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import type { LLMProvider, LLMMessage, LLMToolDef } from "./types.js";
 
 const DEFAULT_BASE_URL = "https://api.openai.com/v1";
-const DEFAULT_MODEL = "gpt-5-nano";
+const DEFAULT_MODEL = "gpt-5.4-nano";
 
 export function createProvider(model?: string): LLMProvider {
   const baseURL = process.env.OPENAI_BASE_URL || DEFAULT_BASE_URL;

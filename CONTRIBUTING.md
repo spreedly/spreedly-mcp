@@ -184,6 +184,44 @@ npm run test:evals -- --matrix
 
 See `evals/README.md` for full details on adding scenarios, available graders, and using alternative LLM providers.
 
+## Debugging the MCP Server
+
+Because MCP servers communicate over stdout (reserved for protocol traffic), you can't debug them with `curl` or ad-hoc HTTP requests. Here are the recommended approaches.
+
+### MCP Inspector (interactive)
+
+MCP Inspector is a browser-based tool that connects to the server over stdio and lets you list tools, call them with custom arguments, and see the full JSON response -- including error content, `isError` flags, and structured output.
+
+```bash
+npm run build && npm run inspect
+```
+
+This runs `npx @modelcontextprotocol/inspector node dist/bin.js`. Set your Spreedly credentials as environment variables before running (see "Running Locally" above). No separate client needed.
+
+Use the inspector to:
+
+- Verify error responses include the expected fields (status code, request ID, response body)
+- Test edge cases (invalid tokens, missing params) without round-tripping through an LLM
+- Explore tool schemas and annotations interactively
+
+### MCP integration test harness (programmatic)
+
+For automated debugging, use the test harness at `tests/helpers/mcp-harness.ts`. It creates a real MCP client + server pair connected via `InMemoryTransport` with a mocked Spreedly transport. You can simulate any Spreedly response (including HTTP errors) and assert on what the MCP client receives:
+
+```typescript
+const mockResponses = new Map([
+  ["GET /gateways.json", { data: { error: "Unauthorized" }, status: 401 }],
+]);
+const harness = await createMcpHarness(ALL_DISABLED, mockResponses);
+const result = await harness.client.callTool({
+  name: "spreedly_gateway_list",
+  arguments: {},
+});
+// result.content[0].text contains the full formatted error
+```
+
+Mock responses with `status >= 400` are automatically routed through `mapHttpStatusToError`, matching the real transport's behavior. See `tests/integration/mcp-server.test.ts` for examples.
+
 ## Submitting Changes
 
 1. Fork the repository

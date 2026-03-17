@@ -1,7 +1,13 @@
 import type { SpreedlyTransport } from "../transport/types.js";
-import { SpreedlyError } from "../transport/errors.js";
-import { sanitizeParams, redactCredentials } from "./sanitizer.js";
+import {
+  SpreedlyError,
+  SpreedlyPaymentError,
+  SpreedlyRateLimitError,
+  SpreedlyValidationError,
+} from "../transport/errors.js";
+import { sanitizeParams, redactSensitiveValues } from "./sanitizer.js";
 import { emitAuditEvent } from "./audit-logger.js";
+import { ZodError } from "zod";
 
 const REQUEST_ID_HEADER = "x-request-id";
 
@@ -18,13 +24,16 @@ export interface McpToolResult {
   isError?: boolean;
 }
 
+export type ErrorParser = (error: SpreedlyError) => Record<string, unknown>;
+
 export function wrapHandler<TParams extends Record<string, unknown>>(
   toolName: string,
   handler: ToolHandler<TParams, unknown>,
   validate: (raw: unknown) => TParams,
-  options?: { silent?: boolean },
+  options?: { silent?: boolean; parseError?: ErrorParser },
 ): (raw: unknown, ctx: ToolContext) => Promise<McpToolResult> {
   const audit = !options?.silent;
+  const errorParser = options?.parseError;
   return async (raw: unknown, ctx: ToolContext): Promise<McpToolResult> => {
     const startTime = Date.now();
     const { transport: tracked, getHttpContext } = withHttpTracking(ctx.transport);
@@ -33,22 +42,26 @@ export function wrapHandler<TParams extends Record<string, unknown>>(
       const sanitized = sanitizeParams(rawParams);
       const validated = validate(sanitized);
       const result = await handler(validated, { ...ctx, transport: tracked });
-      const text = typeof result === "string" ? result : JSON.stringify(result, null, 2);
-      if (audit)
-        emitAuditEvent(toolName, ctx.environmentKey, startTime, undefined, getHttpContext());
-      return { content: [{ type: "text", text }] };
+
+      const httpCtx = getHttpContext();
+      const durationMs = Date.now() - startTime;
+
+      if (audit) emitAuditEvent(toolName, ctx.environmentKey, startTime, undefined, httpCtx);
+
+      return toToolResult(result, httpCtx, durationMs);
     } catch (error) {
-      if (audit) {
-        const ctx_ = getHttpContext();
-        if (!ctx_.requestId && error instanceof SpreedlyError && error.requestId) {
-          ctx_.requestId = error.requestId;
-        }
-        if (ctx_.httpStatusCode === undefined && error instanceof SpreedlyError) {
-          ctx_.httpStatusCode = error.statusCode;
-        }
-        emitAuditEvent(toolName, ctx.environmentKey, startTime, error, ctx_);
+      const httpCtx = getHttpContext();
+      const durationMs = Date.now() - startTime;
+
+      if (error instanceof SpreedlyError) {
+        if (!httpCtx.requestId && error.requestId) httpCtx.requestId = error.requestId;
+        if (httpCtx.httpStatusCode === undefined) httpCtx.httpStatusCode = error.statusCode;
       }
-      return formatError(error);
+
+      if (audit) emitAuditEvent(toolName, ctx.environmentKey, startTime, error, httpCtx);
+
+      const errorObj = buildErrorObject(error, errorParser);
+      return toToolResult(errorObj, httpCtx, durationMs, true);
     }
   };
 }
@@ -84,30 +97,75 @@ function withHttpTracking(transport: SpreedlyTransport) {
   };
 }
 
-function formatError(error: unknown): McpToolResult {
+function toToolResult(
+  payload: unknown,
+  httpCtx: { requestId?: string; httpStatusCode?: number },
+  durationMs: number,
+  isError?: boolean,
+): McpToolResult {
+  const metadata: Record<string, unknown> = { durationMs };
+  if (httpCtx.httpStatusCode !== undefined) metadata.httpStatusCode = httpCtx.httpStatusCode;
+  if (httpCtx.requestId) metadata.requestId = httpCtx.requestId;
+
+  const base =
+    payload && typeof payload === "object" && !Array.isArray(payload)
+      ? (payload as Record<string, unknown>)
+      : { data: payload };
+
+  const output = { ...base, _metadata: metadata };
+  const text = JSON.stringify(redactSensitiveValues(output), null, 2);
+  return { content: [{ type: "text", text }], ...(isError && { isError: true }) };
+}
+
+function defaultParseError(error: SpreedlyError): Record<string, unknown> {
+  const details: Record<string, unknown> = {};
+  if (error instanceof SpreedlyPaymentError && error.transactionToken) {
+    details.transactionToken = error.transactionToken;
+  }
+  if (error instanceof SpreedlyRateLimitError && error.retryAfterMs) {
+    details.retryAfterMs = error.retryAfterMs;
+  }
+  if (error instanceof SpreedlyValidationError && Object.keys(error.fieldErrors).length > 0) {
+    details.fieldErrors = error.fieldErrors;
+  }
+  return details;
+}
+
+function buildErrorObject(
+  error: unknown,
+  errorParser?: ErrorParser,
+): { error: Record<string, unknown> } {
   if (error instanceof SpreedlyError) {
-    const parts = [`Error (${error.code}): ${error.message}`];
-    if ("fieldErrors" in error) {
-      const fe = (error as { fieldErrors: Record<string, string[]> }).fieldErrors;
-      for (const [field, messages] of Object.entries(fe)) {
-        parts.push(`  ${field}: ${messages.join(", ")}`);
-      }
+    const parsed = errorParser ? errorParser(error) : defaultParseError(error);
+    return {
+      error: {
+        httpStatusCode: error.statusCode ?? null,
+        message: error.message,
+        ...(error.errorType && error.statusCode === undefined && { errorType: error.errorType }),
+        ...parsed,
+      },
+    };
+  }
+
+  if (error instanceof ZodError) {
+    const messages = error.issues.map((i) => `${i.path.join(".")}: ${i.message}`);
+    const fieldErrors: Record<string, string[]> = {};
+    for (const issue of error.issues) {
+      const key = issue.path.join(".") || "_root";
+      (fieldErrors[key] ??= []).push(issue.message);
     }
     return {
-      content: [{ type: "text", text: redactCredentials(parts.join("\n")) }],
-      isError: true,
+      error: {
+        httpStatusCode: null,
+        message: messages.join("; "),
+        fieldErrors,
+      },
     };
   }
 
   if (error instanceof Error) {
-    return {
-      content: [{ type: "text", text: redactCredentials(`Error: ${error.message}`) }],
-      isError: true,
-    };
+    return { error: { httpStatusCode: null, message: error.message } };
   }
 
-  return {
-    content: [{ type: "text", text: "An unexpected error occurred." }],
-    isError: true,
-  };
+  return { error: { httpStatusCode: null, message: "An unexpected error occurred." } };
 }
