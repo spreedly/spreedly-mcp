@@ -11,6 +11,11 @@ import {
 } from "../lib/graders.js";
 import { echo, gatewayList, gatewayCreate } from "../lib/mock-responders.js";
 import { GW, PM } from "../lib/mockTokens.js";
+import {
+  fakeGateway,
+  fakeGatewayOptions,
+  fakePaymentMethod,
+} from "../../tests/helpers/fixtures.js";
 
 export const listBeforeCreateGateway: Scenario = {
   name: "List gateways before creating when one exists",
@@ -70,6 +75,24 @@ export const noRepeatedGatewayCreation: Scenario = {
       "GET /gateways.json",
       gatewayList({ token: GW.STRIPE, gateway_type: "stripe", name: "Stripe" }),
     ],
+    [
+      "GET /gateways/*.json",
+      {
+        data: fakeGateway({ token: GW.STRIPE, gateway_type: "stripe", name: "Stripe" }),
+      },
+    ],
+    [
+      "GET /payment_methods.json",
+      {
+        data: {
+          payment_methods: [
+            fakePaymentMethod({ token: PM.BATCH_1 }).payment_method,
+            fakePaymentMethod({ token: PM.BATCH_2 }).payment_method,
+            fakePaymentMethod({ token: PM.BATCH_3 }).payment_method,
+          ],
+        },
+      },
+    ],
     ["POST /gateways.json", gatewayCreate({ token: GW.NEW })],
     ["POST /gateways/*/purchase.json", echo.purchase()],
   ]),
@@ -101,6 +124,10 @@ export const findExistingSandboxGateway: Scenario = {
   },
 
   mockResponses: new Map<string, MockResponseValue>([
+    [
+      "GET /gateways_options.json",
+      { data: fakeGatewayOptions() },
+    ],
     [
       "GET /gateways.json",
       gatewayList({
@@ -135,6 +162,7 @@ export const clarifyAmbiguousGateway: Scenario = {
   },
 
   mockResponses: new Map<string, MockResponseValue>([
+    ["GET /gateways_options.json", { data: fakeGatewayOptions() }],
     [
       "GET /gateways.json",
       gatewayList(
