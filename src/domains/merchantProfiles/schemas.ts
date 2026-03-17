@@ -6,7 +6,7 @@ const MerchantProfileCardDetailsSchema = z.object({
     .describe("Merchant ID assigned by the acquiring bank for transaction reconciliation"),
   mcc: z.string().describe("4-digit Merchant Category Code classifying the business type"),
   merchant_name: z.string().describe("Merchant name as assigned by the acquiring bank"),
-  country_code: z.string().describe("Country code in ISO 3166-1 numeric format"),
+  country_code: z.string().min(4).describe("Country code in ISO 3166-1 numeric format"),
 });
 
 export const CreateMerchantProfileSchema = z

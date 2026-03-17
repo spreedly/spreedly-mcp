@@ -15,7 +15,7 @@ describe("sub-merchant tools", () => {
       new Map([["POST /sub_merchants.json", { data: fakeSubMerchant() }]]),
     );
     await findTool("spreedly_sub_merchant_create").handler(
-      { sub_merchant: { name: "Test" } },
+      { sub_merchant: { name: "Test", environment_key: "test_env_key" } },
       { transport },
     );
     expect(calls[0].method).toBe("POST");

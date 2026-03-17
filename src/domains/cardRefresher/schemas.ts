@@ -7,6 +7,10 @@ export const CardRefresherInquirySchema = z
         .string()
         .describe("The token of the payment method to be inquired for update"),
       region: z.string().describe("The onboarded region where the payment method is processed"),
+      updating_service: z
+        .string()
+        .optional()
+        .describe("The updating service to use for the inquiry"),
     }),
   })
   .strict();
