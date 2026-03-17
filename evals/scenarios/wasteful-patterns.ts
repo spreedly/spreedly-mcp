@@ -124,10 +124,7 @@ export const findExistingSandboxGateway: Scenario = {
   },
 
   mockResponses: new Map<string, MockResponseValue>([
-    [
-      "GET /gateways_options.json",
-      { data: fakeGatewayOptions() },
-    ],
+    ["GET /gateways_options.json", { data: fakeGatewayOptions() }],
     [
       "GET /gateways.json",
       gatewayList({
