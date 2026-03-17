@@ -15,7 +15,17 @@ describe("merchant profile tools", () => {
       new Map([["POST /merchant_profiles.json", { data: fakeMerchantProfile() }]]),
     );
     await findTool("spreedly_merchant_profile_create").handler(
-      { merchant_profile: { name: "Test" } },
+      {
+        merchant_profile: {
+          visa: {
+            acquirer_merchant_id: "test_merchant_id",
+            mcc: "1234",
+            merchant_name: "test merchant",
+            country_code: "581",
+          },
+          description: "Test 01",
+        },
+      },
       { transport },
     );
     expect(calls[0].method).toBe("POST");
@@ -46,7 +56,7 @@ describe("merchant profile tools", () => {
       new Map([["PUT /merchant_profiles/FakeMPToken_mp001.json", { data: fakeMerchantProfile() }]]),
     );
     await findTool("spreedly_merchant_profile_update").handler(
-      { merchant_profile_token: "FakeMPToken_mp001", merchant_profile: { name: "Updated" } },
+      { merchant_profile_token: "FakeMPToken_mp001", merchant_profile: { description: "Updated" } },
       { transport },
     );
     expect(calls[0].method).toBe("PUT");

@@ -13,7 +13,16 @@ describe("card refresher tools", () => {
     const { transport, calls } = createMockTransport(
       new Map([["POST /card_refresher/inquiry.json", { data: { inquiry: { token: "inq1" } } }]]),
     );
-    await findTool("spreedly_card_refresher_inquiry").handler({}, { transport });
+    await findTool("spreedly_card_refresher_inquiry").handler(
+      {
+        card_refresher_inquiry: {
+          region: "NA",
+          payment_method_token: "FakePMToken_001",
+          updating_service: "visa_au",
+        },
+      },
+      { transport },
+    );
     expect(calls[0].method).toBe("POST");
   });
 
