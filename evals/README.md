@@ -45,6 +45,10 @@ npm run test:evals -- --scenario token-reuse
 npm run test:evals -- --scenario policy-enforcement
 npm run test:evals -- --scenario wasteful-patterns
 npm run test:evals -- --scenario operator-fidelity
+npm run test:evals -- --scenario error-handling
+npm run test:evals -- --scenario tool-selection
+npm run test:evals -- --scenario multi-step-workflows
+npm run test:evals -- --scenario parameter-selection
 
 # Use a different model
 npm run test:evals -- --model gpt-4o

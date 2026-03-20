@@ -65,7 +65,12 @@ export function createTransport(
       }
 
       if (!response.ok) {
-        throw mapHttpStatusToError(response.status, data, responseHeaders["x-request-id"]);
+        throw mapHttpStatusToError(
+          response.status,
+          data,
+          responseHeaders["x-request-id"],
+          responseHeaders,
+        );
       }
 
       return { data, status: response.status, headers: responseHeaders };
@@ -74,17 +79,19 @@ export function createTransport(
         throw error;
       }
       if (error instanceof DOMException && error.name === "AbortError") {
-        throw new SpreedlyError("Request timed out.", "TIMEOUT", 408);
+        throw new SpreedlyError("Request timed out.", undefined, "timeout");
       }
       if (error instanceof TypeError && error.message.includes("fetch")) {
         throw new SpreedlyError(
           "Unable to connect to the Spreedly API. Check your network connection.",
-          "NETWORK_ERROR",
+          undefined,
+          "network",
         );
       }
       throw new SpreedlyError(
         "An unexpected error occurred while communicating with the Spreedly API.",
-        "UNKNOWN_ERROR",
+        undefined,
+        "internal",
       );
     } finally {
       clearTimeout(timer);

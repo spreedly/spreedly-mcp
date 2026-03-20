@@ -39,7 +39,6 @@ describe("emitAuditEvent", () => {
     expect(parsed.environmentKey).toBe("Abc123XyzLongEnoughKey");
     expect(parsed.status).toBe("success");
     expect(parsed.durationMs).toBeGreaterThanOrEqual(0);
-    expect(parsed.errorCode).toBeUndefined();
     expect(parsed.httpStatusCode).toBeUndefined();
     expect(parsed.requestId).toBeUndefined();
   });
@@ -81,7 +80,7 @@ describe("emitAuditEvent", () => {
     expect(stderrSpy).toHaveBeenCalledOnce();
   });
 
-  it("classifies SpreedlyError with errorCode", () => {
+  it("sets httpStatusCode to null for SpreedlyError without httpContext", () => {
     emitAuditEvent(
       "spreedly_gateway_authorize",
       "TestEnvKey123",
@@ -91,10 +90,10 @@ describe("emitAuditEvent", () => {
 
     const parsed = JSON.parse((stderrSpy.mock.calls[0][0] as string).trim());
     expect(parsed.status).toBe("error");
-    expect(parsed.errorCode).toBe("AUTH_ERROR");
+    expect(parsed.httpStatusCode).toBeNull();
   });
 
-  it("classifies SpreedlyValidationError with errorCode", () => {
+  it("sets httpStatusCode to null for SpreedlyValidationError without httpContext", () => {
     emitAuditEvent(
       "spreedly_payment_method_create",
       "TestEnvKey123",
@@ -104,33 +103,35 @@ describe("emitAuditEvent", () => {
 
     const parsed = JSON.parse((stderrSpy.mock.calls[0][0] as string).trim());
     expect(parsed.status).toBe("error");
-    expect(parsed.errorCode).toBe("VALIDATION_ERROR");
+    expect(parsed.httpStatusCode).toBeNull();
   });
 
-  it("classifies generic Error as INTERNAL_ERROR", () => {
+  it("sets httpStatusCode to null for generic Error", () => {
     emitAuditEvent("spreedly_gateway_list", "TestEnvKey123", Date.now(), new Error("oops"));
 
     const parsed = JSON.parse((stderrSpy.mock.calls[0][0] as string).trim());
     expect(parsed.status).toBe("error");
-    expect(parsed.errorCode).toBe("INTERNAL_ERROR");
-    expect(parsed.httpStatusCode).toBeUndefined();
+    expect(parsed.httpStatusCode).toBeNull();
   });
 
-  it("classifies non-Error throws as UNKNOWN_ERROR", () => {
+  it("sets httpStatusCode to null for non-Error throws", () => {
     emitAuditEvent("spreedly_gateway_list", "TestEnvKey123", Date.now(), "string error");
 
     const parsed = JSON.parse((stderrSpy.mock.calls[0][0] as string).trim());
     expect(parsed.status).toBe("error");
-    expect(parsed.errorCode).toBe("UNKNOWN_ERROR");
+    expect(parsed.httpStatusCode).toBeNull();
   });
 
-  it.each([null, 0, "", false])("classifies falsy throw value (%j) as error", (value) => {
-    emitAuditEvent("spreedly_gateway_list", "TestEnvKey123", Date.now(), value);
+  it.each([null, 0, "", false])(
+    "sets httpStatusCode to null for falsy throw value (%j)",
+    (value) => {
+      emitAuditEvent("spreedly_gateway_list", "TestEnvKey123", Date.now(), value);
 
-    const parsed = JSON.parse((stderrSpy.mock.calls[0][0] as string).trim());
-    expect(parsed.status).toBe("error");
-    expect(parsed.errorCode).toBe("UNKNOWN_ERROR");
-  });
+      const parsed = JSON.parse((stderrSpy.mock.calls[0][0] as string).trim());
+      expect(parsed.status).toBe("error");
+      expect(parsed.httpStatusCode).toBeNull();
+    },
+  );
 
   it("includes httpStatusCode on success when provided via httpContext", () => {
     emitAuditEvent("spreedly_gateway_list", "TestEnvKey123", Date.now(), undefined, {
@@ -158,7 +159,6 @@ describe("emitAuditEvent", () => {
 
     const parsed = JSON.parse((stderrSpy.mock.calls[0][0] as string).trim());
     expect(parsed.status).toBe("error");
-    expect(parsed.errorCode).toBe("AUTH_ERROR");
     expect(parsed.httpStatusCode).toBe(401);
     expect(parsed.requestId).toBe("req-err");
   });

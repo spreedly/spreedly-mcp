@@ -40,12 +40,12 @@ src/
 │   ├── types.ts
 │   └── errors.ts
 └── types/
-    └── shared.ts          # ToolDefinition interface (name, description, schema, annotations, handler)
+    └── shared.ts          # ToolDefinition interface (name, description, schema, annotations, handler, parseError)
 ```
 
 ### Key Patterns
 
-**ToolDefinition** (`src/types/shared.ts`): Every tool is a plain object with `name`, `description`, `schema` (Zod), `annotations` (MCP ToolAnnotations), and a `handler` function. Tools are collected in `src/domains/index.ts` as `allTools`.
+**ToolDefinition** (`src/types/shared.ts`): Every tool is a plain object with `name`, `description`, `schema` (Zod), `annotations` (MCP ToolAnnotations), a `handler` function, and an optional `parseError` hook. Tools are collected in `src/domains/index.ts` as `allTools`. The `parseError` hook lets a tool override how `SpreedlyError` responses are extracted into structured agent-facing output; when omitted, the default parser extracts `fieldErrors`, `transactionToken`, and `retryAfterMs` from typed error subclass properties.
 
 **Tool annotations**: Each tool declares MCP-native `annotations` (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`) directly on its definition. These are per-tool, not per-category. The server passes them to `registerTool`. Each annotation has a comment explaining why it was set. When adding or modifying annotations, apply these principles:
 
@@ -86,7 +86,11 @@ Three test layers, each with a distinct role:
 
 ### MCP Test Harness
 
-`tests/helpers/mcp-harness.ts` provides `createMcpHarness(policy, mockResponses)` which creates a fully-wired MCP client/server pair connected via `InMemoryTransport`. The only mock is the Spreedly HTTP transport. Everything above it -- `createServer`, `wrapHandler`, Zod validation, `sanitizeParams`, `formatError`, audit logging -- runs for real. Both integration tests and behavioral evals use this harness.
+`tests/helpers/mcp-harness.ts` provides `createMcpHarness(policy, mockResponses)` which creates a fully-wired MCP client/server pair connected via `InMemoryTransport`. The only mock is the Spreedly HTTP transport. Everything above it -- `createServer`, `wrapHandler`, Zod validation, `sanitizeParams`, error formatting, audit logging -- runs for real. Both integration tests and behavioral evals use this harness. Mock responses with `status >= 400` are routed through `mapHttpStatusToError`, matching the real transport's error path.
+
+### Debugging
+
+- **MCP Inspector**: `npm run inspect` launches a browser UI to call tools and inspect responses interactively. Build first with `npm run build`.
 
 ### Eval Architecture
 

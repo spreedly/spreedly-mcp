@@ -202,11 +202,108 @@ describe("SpreedlyHttpTransport", () => {
     }
   });
 
+  it("throws SpreedlyValidationError on 422 with canonical array errors", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          errors: [
+            { key: "errors.amount", message: "Amount is required." },
+            { key: "errors.currency_code", message: "Currency code is required." },
+          ],
+        }),
+        { status: 422, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    const transport = createTransport(FAKE_ENV_KEY, FAKE_ACCESS_SECRET);
+    try {
+      await transport.request("POST", "/test");
+      expect.fail("Should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(SpreedlyValidationError);
+      const ve = err as SpreedlyValidationError;
+      expect(ve.fieldErrors).toEqual({
+        amount: ["Amount is required."],
+        currency_code: ["Currency code is required."],
+      });
+    }
+  });
+
+  it("derives fieldErrors from attribute when present in array errors", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          errors: [{ key: "errors.gateway", attribute: "gateway_type", message: "can't be blank" }],
+        }),
+        { status: 422, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    const transport = createTransport(FAKE_ENV_KEY, FAKE_ACCESS_SECRET);
+    try {
+      await transport.request("POST", "/test");
+      expect.fail("Should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(SpreedlyValidationError);
+      const ve = err as SpreedlyValidationError;
+      expect(ve.fieldErrors).toEqual({
+        gateway_type: ["can't be blank"],
+      });
+    }
+  });
+
+  it("groups array errors with no derivable field under _base", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          errors: [{ key: "general", message: "Something went wrong." }],
+        }),
+        { status: 422, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    const transport = createTransport(FAKE_ENV_KEY, FAKE_ACCESS_SECRET);
+    try {
+      await transport.request("POST", "/test");
+      expect.fail("Should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(SpreedlyValidationError);
+      const ve = err as SpreedlyValidationError;
+      expect(ve.fieldErrors).toEqual({
+        _base: ["Something went wrong."],
+      });
+    }
+  });
+
   it("throws SpreedlyError on network failure", async () => {
     globalThis.fetch = vi.fn().mockRejectedValue(new TypeError("fetch failed"));
 
     const transport = createTransport(FAKE_ENV_KEY, FAKE_ACCESS_SECRET);
-    await expect(transport.request("GET", "/test")).rejects.toThrow(SpreedlyError);
+    try {
+      await transport.request("GET", "/test");
+      expect.fail("Should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(SpreedlyError);
+      const error = err as SpreedlyError;
+      expect(error.statusCode).toBeUndefined();
+      expect(error.errorType).toBe("network");
+    }
+  });
+
+  it("throws pre-http timeout errors with errorType timeout", async () => {
+    globalThis.fetch = vi.fn().mockRejectedValue(new DOMException("Aborted", "AbortError"));
+
+    const transport = createTransport(FAKE_ENV_KEY, FAKE_ACCESS_SECRET);
+    try {
+      await transport.request("GET", "/test");
+      expect.fail("Should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(SpreedlyError);
+      const error = err as SpreedlyError;
+      expect(error.statusCode).toBeUndefined();
+      expect(error.errorType).toBe("timeout");
+      expect(error.message).toBe("Request timed out.");
+    }
   });
 
   it("credentials are not exposed on the transport object", () => {

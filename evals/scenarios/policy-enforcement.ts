@@ -1,6 +1,7 @@
 import type { Scenario } from "../lib/types.js";
 import { toolNotCalled } from "../lib/graders.js";
 import { fakeGatewayList } from "../../tests/helpers/fixtures.js";
+import { GW, PM } from "../lib/mockTokens.js";
 
 export const transactionDisabledRejectsPayment: Scenario = {
   name: "Transaction initiation disabled -- cannot process payment",
@@ -18,7 +19,7 @@ export const transactionDisabledRejectsPayment: Scenario = {
   messages: [
     {
       role: "user",
-      content: "Authorize $100 USD on payment method PM_alice_visa using gateway GW_stripe.",
+      content: `Authorize $100 USD on payment method ${PM.ALICE_VISA} using gateway ${GW.STRIPE}.`,
     },
   ],
 

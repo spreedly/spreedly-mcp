@@ -299,6 +299,48 @@ describe("MCP callTool through full stack", () => {
     expect(parsed.transaction.amount).toBe(1000);
   });
 
+  it("successful responses include _metadata with httpStatusCode and durationMs", async () => {
+    const mockResponses = new Map<string, MockResponseValue>([
+      [
+        "GET /gateways.json",
+        { data: fakeGatewayList(), headers: { "x-request-id": "req-meta-001" } },
+      ],
+    ]);
+    harness = await createMcpHarness(ALL_DISABLED, mockResponses);
+
+    const result = await harness.client.callTool({
+      name: "spreedly_gateway_list",
+      arguments: {},
+    });
+
+    expect(result.isError).toBeFalsy();
+    const text = (result.content as Array<{ type: string; text: string }>)[0].text;
+    const parsed = JSON.parse(text);
+    expect(parsed.gateways).toHaveLength(2);
+    expect(parsed._metadata).toBeDefined();
+    expect(parsed._metadata.httpStatusCode).toBe(200);
+    expect(parsed._metadata.requestId).toBe("req-meta-001");
+    expect(typeof parsed._metadata.durationMs).toBe("number");
+    expect(parsed._metadata.durationMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it("_metadata.durationMs is present even without x-request-id", async () => {
+    const mockResponses = new Map<string, MockResponseValue>([
+      ["GET /gateways.json", { data: fakeGatewayList() }],
+    ]);
+    harness = await createMcpHarness(ALL_DISABLED, mockResponses);
+
+    const result = await harness.client.callTool({
+      name: "spreedly_gateway_list",
+      arguments: {},
+    });
+
+    const parsed = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+    expect(parsed._metadata.durationMs).toBeGreaterThanOrEqual(0);
+    expect(parsed._metadata.httpStatusCode).toBe(200);
+    expect(parsed._metadata.requestId).toBeUndefined();
+  });
+
   it("returns structured error when mock transport has no matching response", async () => {
     harness = await createMcpHarness(ALL_DISABLED);
 
@@ -309,7 +351,210 @@ describe("MCP callTool through full stack", () => {
 
     expect(result.isError).toBe(true);
     const text = (result.content as Array<{ type: string; text: string }>)[0].text;
-    expect(text).toContain("Error");
-    expect(text).toContain("NOT_FOUND");
+    const parsed = JSON.parse(text);
+    expect(parsed.error.httpStatusCode).toBe(404);
+    expect(parsed.error.message).toContain("No mock response");
+    expect(parsed._metadata).toBeDefined();
+    expect(typeof parsed._metadata.durationMs).toBe("number");
+  });
+});
+
+describe("MCP error data capture from Spreedly API", () => {
+  function parseError(result: Record<string, unknown>) {
+    const content = result.content as Array<{ type: string; text: string }>;
+    return JSON.parse(content[0].text) as {
+      error: Record<string, unknown>;
+      _metadata: Record<string, unknown>;
+    };
+  }
+
+  it("surfaces 422 validation error with field details", async () => {
+    const mockResponses = new Map<string, MockResponseValue>([
+      [
+        "POST /gateways.json",
+        {
+          data: {
+            errors: {
+              gateway_type: ["can't be blank"],
+              login: ["is required for this gateway type"],
+            },
+          },
+          status: 422,
+        },
+      ],
+    ]);
+    harness = await createMcpHarness(
+      { ...ALL_DISABLED, administrativeEnabled: true },
+      mockResponses,
+    );
+
+    const result = await harness.client.callTool({
+      name: "spreedly_gateway_create",
+      arguments: { gateway_type: "" },
+    });
+
+    expect(result.isError).toBe(true);
+    const parsed = parseError(result);
+    expect(parsed.error.httpStatusCode).toBe(422);
+    expect(parsed.error.fieldErrors).toEqual({
+      gateway_type: ["can't be blank"],
+      login: ["is required for this gateway type"],
+    });
+    expect(parsed._metadata.httpStatusCode).toBe(422);
+    expect(typeof parsed._metadata.durationMs).toBe("number");
+  });
+
+  it("surfaces 422 error with Spreedly errors array format (key + message)", async () => {
+    const mockResponses = new Map<string, MockResponseValue>([
+      [
+        "POST /gateways/*/authorize.json",
+        {
+          data: {
+            errors: [
+              { key: "errors.amount", message: "Amount is required." },
+              { key: "errors.currency_code", message: "Currency code is required." },
+            ],
+          },
+          status: 422,
+        },
+      ],
+    ]);
+    harness = await createMcpHarness(
+      { ...ALL_DISABLED, transactionInitiationEnabled: true },
+      mockResponses,
+    );
+
+    const result = await harness.client.callTool({
+      name: "spreedly_gateway_authorize",
+      arguments: {
+        gateway_token: "GW_test",
+        payment_method_token: "PM_test",
+        amount: 1000,
+        currency_code: "USD",
+      },
+    });
+
+    expect(result.isError).toBe(true);
+    const parsed = parseError(result);
+    expect(parsed.error.httpStatusCode).toBe(422);
+    expect(parsed.error.message).toContain("Amount is required.");
+    expect(parsed.error.message).toContain("Currency code is required.");
+    expect(parsed.error.fieldErrors).toEqual({
+      amount: ["Amount is required."],
+      currency_code: ["Currency code is required."],
+    });
+    expect(parsed._metadata.httpStatusCode).toBe(422);
+  });
+
+  it("surfaces 401 auth errors", async () => {
+    const mockResponses = new Map<string, MockResponseValue>([
+      [
+        "GET /gateways.json",
+        {
+          data: {
+            error: "Unable to authenticate using the given environment_key and access_token.",
+          },
+          status: 401,
+        },
+      ],
+    ]);
+    harness = await createMcpHarness(ALL_DISABLED, mockResponses);
+
+    const result = await harness.client.callTool({
+      name: "spreedly_gateway_list",
+      arguments: {},
+    });
+
+    expect(result.isError).toBe(true);
+    const parsed = parseError(result);
+    expect(parsed.error.httpStatusCode).toBe(401);
+    expect(parsed._metadata.httpStatusCode).toBe(401);
+  });
+
+  it("surfaces 402 payment errors with transactionToken", async () => {
+    const mockResponses = new Map<string, MockResponseValue>([
+      [
+        "POST /gateways/*/purchase.json",
+        {
+          data: {
+            errors: [{ key: "errors.payment_method", message: "The payment method is not valid." }],
+            transaction_token: "TxnToken_402_abc",
+          },
+          status: 402,
+        },
+      ],
+    ]);
+    harness = await createMcpHarness(
+      { ...ALL_DISABLED, transactionInitiationEnabled: true },
+      mockResponses,
+    );
+
+    const result = await harness.client.callTool({
+      name: "spreedly_gateway_purchase",
+      arguments: {
+        gateway_token: "GW_test",
+        payment_method_token: "PM_bad",
+        amount: 1000,
+        currency_code: "USD",
+      },
+    });
+
+    expect(result.isError).toBe(true);
+    const parsed = parseError(result);
+    expect(parsed.error.httpStatusCode).toBe(402);
+    expect(parsed.error.message).toContain("The payment method is not valid.");
+    expect(parsed.error.transactionToken).toBe("TxnToken_402_abc");
+    expect(parsed._metadata.httpStatusCode).toBe(402);
+  });
+
+  it("surfaces 429 rate limit errors with retryAfterMs", async () => {
+    const mockResponses = new Map<string, MockResponseValue>([
+      [
+        "GET /gateways.json",
+        {
+          data: { error: "Rate limit exceeded" },
+          status: 429,
+          headers: { "retry-after": "30" },
+        },
+      ],
+    ]);
+    harness = await createMcpHarness(ALL_DISABLED, mockResponses);
+
+    const result = await harness.client.callTool({
+      name: "spreedly_gateway_list",
+      arguments: {},
+    });
+
+    expect(result.isError).toBe(true);
+    const parsed = parseError(result);
+    expect(parsed.error.httpStatusCode).toBe(429);
+    expect(parsed.error.retryAfterMs).toBe(30000);
+    expect(parsed._metadata.httpStatusCode).toBe(429);
+  });
+
+  it("includes requestId in _metadata when present", async () => {
+    const mockResponses = new Map<string, MockResponseValue>([
+      [
+        "GET /gateways.json",
+        {
+          data: { error: "Not found" },
+          status: 404,
+          headers: { "x-request-id": "req-debug-12345" },
+        },
+      ],
+    ]);
+    harness = await createMcpHarness(ALL_DISABLED, mockResponses);
+
+    const result = await harness.client.callTool({
+      name: "spreedly_gateway_list",
+      arguments: {},
+    });
+
+    expect(result.isError).toBe(true);
+    const parsed = parseError(result);
+    expect(parsed.error.httpStatusCode).toBe(404);
+    expect(parsed._metadata.httpStatusCode).toBe(404);
+    expect(parsed._metadata.requestId).toBe("req-debug-12345");
+    expect(typeof parsed._metadata.durationMs).toBe("number");
   });
 });

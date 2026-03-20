@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { SpreedlyError } from "../transport/errors.js";
 
 /**
  * Structured audit log entry conforming to PCI DSS v4.0.1 Requirement 10.2.2.
@@ -27,18 +26,12 @@ interface AuditEntry {
   /** The `x-request-id` HTTP response header from the Spreedly API, if a request was made. */
   requestId?: string;
   /**
-   * MCP-level error classification. Derived from {@link SpreedlyError.code}
-   * for API errors (e.g. `"AUTH_ERROR"`, `"VALIDATION_ERROR"`), or set to
-   * `"INTERNAL_ERROR"` / `"UNKNOWN_ERROR"` for non-API failures.
-   * Absent on success.
-   */
-  errorCode?: string;
-  /**
    * The HTTP status code from the Spreedly API response (e.g. 200, 401, 422).
    * Present whenever a Spreedly API call was made, regardless of success or failure.
-   * Absent when no HTTP request was made (e.g. validation rejection).
+   * `null` when an error occurred before any HTTP request (e.g. validation rejection).
+   * Absent on success when no HTTP request was made.
    */
-  httpStatusCode?: number;
+  httpStatusCode?: number | null;
 }
 
 /**
@@ -86,10 +79,10 @@ export function emitAuditEvent(
  * (UUIDv4) so that downstream consumers can de-duplicate entries when an MCP host
  * renders stderr output more than once.
  *
- * Classifies errors into three categories:
- * - {@link SpreedlyError}: uses the error's `code` and `statusCode` directly.
- * - Standard `Error`: classified as `"INTERNAL_ERROR"`.
- * - Non-Error values: classified as `"UNKNOWN_ERROR"`.
+ * Sets `httpStatusCode` from the HTTP context when available.
+ * On error, when no HTTP request was made (e.g. validation rejection),
+ * `httpStatusCode` is set to `null` to distinguish from success paths
+ * where no API call occurred (field absent).
  *
  * @param toolName - The MCP tool name.
  * @param environmentKey - The SPREEDLY_ENVIRONMENT_KEY.
@@ -120,14 +113,8 @@ function buildAuditEntry(
   }
   if (httpContext?.httpStatusCode !== undefined) {
     entry.httpStatusCode = httpContext.httpStatusCode;
-  }
-
-  if (error instanceof SpreedlyError) {
-    entry.errorCode = error.code;
-  } else if (error instanceof Error) {
-    entry.errorCode = "INTERNAL_ERROR";
   } else if (error !== undefined) {
-    entry.errorCode = "UNKNOWN_ERROR";
+    entry.httpStatusCode = null;
   }
 
   return entry;

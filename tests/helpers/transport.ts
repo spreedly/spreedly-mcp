@@ -3,7 +3,7 @@ import type {
   SpreedlyResponse,
   RequestOptions,
 } from "../../src/transport/types.js";
-import { SpreedlyNotFoundError } from "../../src/transport/errors.js";
+import { mapHttpStatusToError, SpreedlyNotFoundError } from "../../src/transport/errors.js";
 
 export interface MockCall {
   method: string;
@@ -49,9 +49,20 @@ export function createMockTransport(responses: Map<string, MockResponseValue> = 
             `Pass the echo helper directly as the map value instead.`,
         );
       }
+
+      const status = resolved.status ?? 200;
+      if (status >= 400) {
+        throw mapHttpStatusToError(
+          status,
+          resolved.data,
+          resolved.headers?.["x-request-id"],
+          resolved.headers,
+        );
+      }
+
       return {
         data: resolved.data as T,
-        status: resolved.status ?? 200,
+        status,
         headers: resolved.headers ?? {},
       };
     },

@@ -22,7 +22,7 @@ Usage: npm run test:evals [-- options]
 
 Options:
   -s, --scenario <name>   Run a specific scenario group (token-reuse, policy-enforcement, wasteful-patterns)
-  -m, --model <model>     Model name (default: gpt-5-nano)
+  -m, --model <model>     Model name (default: gpt-5.4-nano)
   -h, --help              Show this help message
 
 Examples:
@@ -39,7 +39,7 @@ Environment variables:
   process.exit(0);
 }
 
-const model = values.model || "gpt-5-nano";
+const model = values.model || "gpt-5.4-nano";
 const scenarioFilter = values.scenario;
 
 let groups: Record<string, Scenario[]>;

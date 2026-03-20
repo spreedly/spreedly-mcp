@@ -58,7 +58,9 @@ export const GatewayAuthorizeSchema = z
     retain_on_success: z
       .boolean()
       .optional()
-      .describe("Whether to retain the payment method on success"),
+      .describe(
+        "When true, automatically vaults (saves) the payment method for future use if the transaction succeeds. Use this when the operator wants to save or keep the card on file.",
+      ),
     order_id: z.string().optional().describe("Merchant order identifier"),
     description: z.string().optional().describe("Transaction description"),
     ip: z.string().optional().describe("Customer IP address"),
@@ -75,7 +77,9 @@ export const GatewayPurchaseSchema = z
     retain_on_success: z
       .boolean()
       .optional()
-      .describe("Whether to retain the payment method on success"),
+      .describe(
+        "When true, automatically vaults (saves) the payment method for future use if the transaction succeeds. Use this when the operator wants to save or keep the card on file.",
+      ),
     order_id: z.string().optional().describe("Merchant order identifier"),
     description: z.string().optional().describe("Transaction description"),
     ip: z.string().optional().describe("Customer IP address"),
@@ -91,7 +95,9 @@ export const GatewayVerifySchema = z
     retain_on_success: z
       .boolean()
       .optional()
-      .describe("Whether to retain the payment method on success"),
+      .describe(
+        "When true, automatically vaults (saves) the payment method for future use if the verification succeeds. Use this when the operator wants to save or keep the card on file.",
+      ),
   })
   .strict();
 

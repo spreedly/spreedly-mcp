@@ -2,6 +2,7 @@ import type { Scenario } from "../lib/types.js";
 import type { MockResponseValue } from "../../tests/helpers/transport.js";
 import { toolCalled, toolCalledWith, callOrder } from "../lib/graders.js";
 import { echo } from "../lib/mock-responders.js";
+import { GW, PM } from "../lib/mockTokens.js";
 
 // const purchaseFollowedByPaymentMethodCreation: Scenario = {
 
@@ -22,7 +23,7 @@ import { echo } from "../lib/mock-responders.js";
 //   messages: [
 //     {
 //       role: "user",
-//       content: "New customer Jane Doe, Visa 4111111111111111, exp 06/2027, CVV 456. Tokenize this card, then charge $25.00 USD on gateway GW_test."
+//       content: "New customer Jane Doe, Visa 4111111111111111, exp 06/2027, CVV 456. Tokenize this card, then charge $25.00 USD on gateway Hv3tP8YqZ1rKjNm5bXwL."
 //     }
 //   ],
 
@@ -50,7 +51,7 @@ const purchaseFollowedByRecache: Scenario = {
       "POST /payment_methods/*/recache.json",
       {
         data: {
-          payment_method: { token: "PM_returning" },
+          payment_method: { token: PM.RETURNING },
         },
       },
     ],
@@ -60,8 +61,7 @@ const purchaseFollowedByRecache: Scenario = {
   messages: [
     {
       role: "user",
-      content:
-        "Returning customer needs CVV recached. Recache CVV '321' for payment method PM_returning, then charge $15.00 USD on gateway GW_test.",
+      content: `Returning customer needs CVV recached. Recache CVV '321' for payment method ${PM.RETURNING}, then charge $15.00 USD on gateway ${GW.GENERIC}.`,
     },
   ],
 
