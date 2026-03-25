@@ -11,7 +11,13 @@ export const ForwardClaimSchema = z
 
 export const ListProtectionEventsSchema = z
   .object({
+    order: z.enum(["asc", "desc"]).optional().describe("Sort order"),
     since_token: z.string().optional().describe("Pagination token"),
+    count: z.string().optional().describe("Number of events to return"),
+    state: z
+      .enum(["pending", "succeeded", "failed"])
+      .optional()
+      .describe("state of the protection check"),
   })
   .strict();
 

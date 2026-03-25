@@ -16,6 +16,7 @@ export const ListGatewaysSchema = z
   .object({
     since_token: z.string().optional().describe("Pagination token to fetch results after"),
     order: z.enum(["asc", "desc"]).optional().describe("Sort order by creation date"),
+    count: z.string().optional().describe("Number of gateways to return"),
   })
   .strict();
 
@@ -46,6 +47,15 @@ export const ListGatewayTransactionsSchema = z
     gateway_token: z.string().describe("The token of the gateway"),
     since_token: z.string().optional().describe("Pagination token"),
     order: z.enum(["asc", "desc"]).optional().describe("Sort order"),
+    state: z
+      .enum([
+        "succeeded",
+        "failed",
+        "gateway_processing_failed",
+        "gateway_processing_result_unknown",
+      ])
+      .optional()
+      .describe("Transaction states to return"),
   })
   .strict();
 

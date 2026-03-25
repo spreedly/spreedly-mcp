@@ -23,6 +23,7 @@ export const GenerateCertificateSchema = z
 
 export const ListCertificatesSchema = z
   .object({
+    order: z.enum(["asc", "desc"]).optional().describe("Sort order"),
     since_token: z.string().optional().describe("Pagination token"),
   })
   .strict();

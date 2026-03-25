@@ -2,6 +2,16 @@ import { z } from "zod";
 
 export const ListTransactionsSchema = z
   .object({
+    state: z
+      .enum([
+        "succeeded",
+        "failed",
+        "gateway_processing_failed",
+        "gateway_processing_result_unknown",
+      ])
+      .optional()
+      .describe("transaction state to return"),
+    count: z.string().optional().describe("Number of transactions to return"),
     since_token: z.string().optional().describe("Pagination token"),
     order: z.enum(["asc", "desc"]).optional().describe("Sort order"),
   })
@@ -29,7 +39,6 @@ export const CaptureTransactionSchema = z
       .positive()
       .optional()
       .describe("Amount in cents to capture (partial capture). Omit for full capture"),
-    currency_code: z.string().length(3).optional().describe("ISO 4217 currency code"),
   })
   .strict();
 
