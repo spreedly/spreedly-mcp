@@ -314,7 +314,9 @@ export const RecachePaymentMethodSchema = z
     payment_method_token: z.string().describe("The token of the payment method"),
     payment_method: z.object({
       credit_card: z.object({
-        verification_value: z.string().describe("Card security code (CVV/CVC) to recache"),
+        verification_value: z
+          .string()
+          .describe("Card security code (CVV/CVC) to recache - sensitive, do not store or log"),
       }),
       allow_blank_name: z.boolean().optional(),
       allow_expired_date: z.boolean().optional(),
