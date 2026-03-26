@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { scenarioGroups } from "./scenarios/index.js";
-import { createProvider } from "./lib/providers.js";
+import { createProvider, withThrottle } from "./lib/providers.js";
 import { runAllScenarios } from "./lib/runner.js";
 import type { EvalResult, Scenario } from "./lib/types.js";
 
@@ -11,6 +11,8 @@ const { values } = parseArgs({
   options: {
     scenario: { type: "string", short: "s" },
     model: { type: "string", short: "m" },
+    concurrency: { type: "string", short: "c" },
+    pause: { type: "string", short: "p" },
     help: { type: "boolean", short: "h" },
   },
   strict: true,
@@ -23,16 +25,22 @@ Usage: npm run test:evals [-- options]
 Options:
   -s, --scenario <name>   Run a specific scenario group (token-reuse, policy-enforcement, wasteful-patterns)
   -m, --model <model>     Model name (default: gpt-5.4-nano)
+  -c, --concurrency <n>   Max scenarios to run in parallel (default: 5)
+  -p, --pause <ms>        Minimum ms between LLM API calls (default: 0, no throttle)
   -h, --help              Show this help message
 
 Examples:
   npm run test:evals                              # Run all evals with default model
   npm run test:evals -- --scenario token-reuse    # Run only token-reuse scenarios
   npm run test:evals -- --model gpt-4o            # Use a different model
+  npm run test:evals -- --concurrency 2           # Limit concurrency to avoid rate limits
+  npm run test:evals -- --concurrency 1 --pause 2000  # Serial with 2s gap between LLM calls
 
 Environment variables:
-  OPENAI_BASE_URL   Override LLM endpoint (default: https://api.openai.com/v1)
-  OPENAI_API_KEY    API key for the LLM provider (required)
+  OPENAI_BASE_URL    Override LLM endpoint (default: https://api.openai.com/v1)
+  OPENAI_API_KEY     API key for the LLM provider (required)
+  EVAL_CONCURRENCY   Default concurrency limit (overridden by --concurrency)
+  EVAL_PAUSE_MS      Default pause between LLM calls in ms (overridden by --pause)
 
   Set these in a .env file in the project root, or export them in your shell.
 `);
@@ -40,6 +48,8 @@ Environment variables:
 }
 
 const model = values.model || "gpt-5.4-nano";
+const concurrency = parseInt(values.concurrency || process.env.EVAL_CONCURRENCY || "5", 10);
+const pauseMs = parseInt(values.pause || process.env.EVAL_PAUSE_MS || "0", 10);
 const scenarioFilter = values.scenario;
 
 let groups: Record<string, Scenario[]>;
@@ -59,10 +69,13 @@ if (scenarioFilter) {
 const totalScenarios = Object.values(groups).reduce((n, s) => n + s.length, 0);
 console.error(`\nSpreedly MCP Behavioral Evals`);
 console.error(`Model: ${model}`);
+console.error(`Concurrency: ${concurrency}`);
+if (pauseMs > 0) console.error(`Pause: ${pauseMs}ms between LLM calls`);
 console.error(`Scenarios: ${totalScenarios}\n`);
 
-const provider = createProvider(model);
-const result = await runAllScenarios(groups, provider, model);
+const baseProvider = createProvider(model);
+const provider = pauseMs > 0 ? withThrottle(baseProvider, pauseMs) : baseProvider;
+const result = await runAllScenarios(groups, provider, model, concurrency);
 
 console.log("\n" + formatResults(result));
 

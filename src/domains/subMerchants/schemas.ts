@@ -66,7 +66,9 @@ export const CreateSubMerchantSchema = z
 
 export const ListSubMerchantsSchema = z
   .object({
+    order: z.enum(["asc", "desc"]).optional().describe("Sort order"),
     since_token: z.string().optional().describe("Pagination token"),
+    count: z.string().optional().describe("Number of sub_merchants to return"),
   })
   .strict();
 

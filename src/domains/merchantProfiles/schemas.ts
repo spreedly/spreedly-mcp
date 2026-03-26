@@ -40,7 +40,9 @@ export const CreateMerchantProfileSchema = z
 
 export const ListMerchantProfilesSchema = z
   .object({
+    order: z.enum(["asc", "desc"]).optional().describe("Sort order"),
     since_token: z.string().optional().describe("Pagination token"),
+    count: z.string().optional().describe("Number of merchant profiles to return"),
   })
   .strict();
 
