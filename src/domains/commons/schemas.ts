@@ -26,21 +26,11 @@ export const BillingAddressSchema = z
   })
   .describe("Billing address for this transaction");
 
-// ---------------------------------------------------------------------------
-// Used by: AuthorizeRequest, PurchaseRequest, ConfirmTransactionRequest,
-//          CreatePaymentMethodRequest
-// ---------------------------------------------------------------------------
 export const CreditCardSchema = z
   .object({
-    number: z.string().min(12).max(19).describe("Full PAN; tokenized by Spreedly"),
-    month: z
-      .string()
-      .regex(/^(0?[1-9]|1[0-2])$/)
-      .describe("Expiration month, e.g. '12'"),
-    year: z
-      .string()
-      .regex(/^\d{4}$/)
-      .describe("4-digit expiration year, e.g. '2030'"),
+    number: z.string().describe("Full PAN; tokenized by Spreedly"),
+    month: z.string().describe("Expiration month, e.g. '12'"),
+    year: z.string().describe("4-digit expiration year, e.g. '2030'"),
     first_name: z
       .string()
       .optional()
@@ -75,40 +65,26 @@ export const CreditCardSchema = z
   })
   .describe("Credit card details");
 
-// ---------------------------------------------------------------------------
-// Used by: PurchaseRequest, CreatePaymentMethodRequest
-// ---------------------------------------------------------------------------
 export const BankAccountSchema = z
   .object({
-    bank_account_number: z.string().min(1).describe("Bank account number"),
+    bank_account_number: z.string().describe("Bank routing number"),
     bank_routing_number: z
       .string()
-      .length(9)
-      .regex(/^\d{9}$/)
-      .describe("9-digit ABA routing number"),
-    first_name: z
-      .string()
-      .optional()
-      .describe("Account owner first name; required if full_name is omitted"),
-    last_name: z
-      .string()
-      .optional()
-      .describe("Account owner last name; required if full_name is omitted"),
-    full_name: z.string().optional().describe("Full name; parsed into first_name / last_name"),
-    bank_account_type: z.enum(["checking", "savings"]).optional().describe("Account type"),
+      .describe("Full bank account number - sensitive, required for tokenization only"),
+    first_name: z.string().optional().describe("Account holder first name"),
+    last_name: z.string().optional().describe("Account holder last name"),
+    full_name: z.string().optional().describe("Account holder full name"),
+    bank_account_type: z.enum(["checking", "savings"]).optional().describe("Type of account"),
     bank_account_holder_type: z
       .enum(["business", "personal"])
       .optional()
       .describe("Account holder type"),
   })
+  .describe("Bank account details")
   .refine((data) => Boolean(data.first_name && data.last_name) || Boolean(data.full_name), {
     message: "Provide either first_name + last_name or full_name",
   })
   .describe("Bank account details");
-
-// ---------------------------------------------------------------------------
-// Used by: AuthorizeRequest, PurchaseRequest, CreatePaymentMethodRequest
-// ---------------------------------------------------------------------------
 
 const ApplePayPaymentDataSchema = z
   .object({
@@ -145,10 +121,6 @@ export const ApplePaySchema = z
   .describe(
     "Apple Pay payment method containing the decrypted PKPaymentToken from Apple's PassKit framework",
   );
-
-// ---------------------------------------------------------------------------
-// Used by: AuthorizeRequest, PurchaseRequest, CreatePaymentMethodRequest
-// ---------------------------------------------------------------------------
 
 const GooglePayPaymentDataSchema = z
   .object({

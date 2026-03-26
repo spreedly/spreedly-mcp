@@ -1,4 +1,10 @@
 import { z } from "zod";
+import {
+  CreditCardSchema,
+  BankAccountSchema,
+  ApplePaySchema,
+  GooglePaySchema,
+} from "../commons/schemas";
 
 const MetadataSchema = z
   .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
@@ -15,149 +21,6 @@ const MetadataSchema = z
       message:
         "Metadata values must be 500 characters or fewer and cannot be compounding data types",
     },
-  );
-
-const CreditCardSchema = z
-  .object({
-    number: z
-      .string()
-      .describe(
-        "Full card number (PAN) - sensitive cardholder data, required for tokenization only",
-      ),
-    month: z.string().describe("Expiration month"),
-    year: z.string().describe("Expiration year"),
-    first_name: z.string().optional().describe("Cardholder first name"),
-    last_name: z.string().optional().describe("Cardholder last name"),
-    full_name: z.string().optional().describe("Cardholder Full name"),
-    verification_value: z
-      .string()
-      .optional()
-      .describe("Card security code (CVV/CVC) - sensitive, do not store or log"),
-    company: z.string().optional().describe("company name associated with the credit card"),
-    address1: z.string().optional().describe("first line of the billing address"),
-    address2: z.string().optional().describe("second line of the billing address"),
-    city: z.string().optional().describe("city of the billing address"),
-    state: z.string().optional().describe("state of the billing address"),
-    zip: z.string().optional().describe("zip code of the billing address"),
-    country: z.string().optional().describe("country code of the billing address"),
-    phone_number: z.string().optional().describe("phone number of the billing address"),
-    shipping_address1: z.string().optional().describe("first line of the shipping address"),
-    shipping_address2: z.string().optional().describe("second line of the shipping address"),
-    shipping_city: z.string().optional().describe("city of the shipping address"),
-    shipping_state: z.string().optional().describe("state of the shipping address"),
-    shipping_zip: z.string().optional().describe("zip code of the shipping address"),
-    shipping_country: z.string().optional().describe("country code of the shipping address"),
-    shipping_phone_number: z.string().optional().describe("phone number of the shipping address"),
-  })
-  .describe("Credit card details")
-  .refine(
-    (data) => data.full_name || (data.first_name !== undefined && data.last_name !== undefined),
-    {
-      message:
-        "Either full_name or both first_name and last_name are required (unless allow_blank_name is true)",
-      path: ["first_name"],
-    },
-  );
-
-const BankAccountSchema = z
-  .object({
-    bank_account_number: z.string().describe("Bank routing number"),
-    bank_routing_number: z
-      .string()
-      .describe("Full bank account number - sensitive, required for tokenization only"),
-    first_name: z.string().optional().describe("Account holder first name"),
-    last_name: z.string().optional().describe("Account holder last name"),
-    full_name: z.string().optional().describe("Account holder full name"),
-    bank_account_type: z.enum(["checking", "savings"]).optional().describe("Type of account"),
-    bank_account_holder_type: z
-      .enum(["business", "personal"])
-      .optional()
-      .describe("Account holder type"),
-  })
-  .describe("Bank account details")
-  .refine(
-    (data) => data.full_name || (data.first_name !== undefined && data.last_name !== undefined),
-    {
-      message: "Either full_name or both first_name and last_name are required",
-      path: ["first_name"],
-    },
-  );
-
-const ApplePayPaymentDataSchema = z
-  .object({
-    version: z.any().optional().describe("Version information about the payment token"),
-    data: z.any().optional().describe("Encrypted payment data"),
-    signature: z.any().optional().describe("Signature of the payment and header data"),
-    header: z
-      .object({
-        ephemeralPublicKey: z
-          .any()
-          .optional()
-          .describe("Ephemeral public key generated for the transaction"),
-        transactionId: z
-          .any()
-          .optional()
-          .describe("Unique identifier for the Apple Pay transaction"),
-        publicKeyHash: z.any().optional().describe("Hash of the merchant's public key"),
-      })
-      .describe("Additional version-dependent information used to decrypt and verify the payment")
-      .optional(),
-  })
-  .describe("The JSON serialized paymentData property of an Apple Pay PKPaymentToken");
-
-const ApplePaySchema = z
-  .object({
-    payment_data: ApplePayPaymentDataSchema,
-    test_card_number: z
-      .string()
-      .optional()
-      .describe(
-        "To mark this as a test Apple Pay payment method, specify a test card number in this field.",
-      ),
-  })
-  .describe(
-    "Apple Pay payment method containing the decrypted PKPaymentToken from Apple's PassKit framework",
-  );
-
-const GooglePayPaymentDataSchema = z
-  .object({
-    signature: z
-      .string()
-      .optional()
-      .describe("Verifies the message came from Google. Base64-encoded, created using ECDSA"),
-    protocolVersion: z
-      .string()
-      .optional()
-      .describe("Identifies the encryption/signing scheme under which the message was created"),
-    signedMessage: z
-      .string()
-      .optional()
-      .describe(
-        "A serialized JSON string containing the encryptedMessage, ephemeralPublicKey and tag",
-      ),
-  })
-  .describe("The JSON serialized Google Pay paymentData");
-
-const GooglePaySchema = z
-  .object({
-    payment_data: GooglePayPaymentDataSchema,
-    test_card_number: z
-      .string()
-      .optional()
-      .describe(
-        "A test card number to mark this as a test payment method without using it against a production gateway",
-      ),
-    first_name: z.string().optional().describe("The first name of the cardholder"),
-    last_name: z.string().optional().describe("The last name of the cardholder"),
-    address_1: z.string().optional().describe("Cardholder's address line 1"),
-    address_2: z.string().optional().describe("Cardholder's address line 2"),
-    city: z.string().optional().describe("Cardholder's city"),
-    state: z.string().optional().describe("Cardholder's state"),
-    zip: z.string().optional().describe("Cardholder's zip code"),
-    country: z.string().optional().describe("Cardholder's country code"),
-  })
-  .describe(
-    "Google Pay payment method containing the encrypted payment token from Google's Pay API",
   );
 
 export const CreatePaymentMethodSchema = z
