@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { ShippingAddressSchema, BillingAddressSchema } from "../commons/schemas";
 import {
   CreditCardSchema,
   ApplePaySchema,
