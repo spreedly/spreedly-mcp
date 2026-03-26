@@ -34,6 +34,18 @@ Or export it in your shell:
 export OPENAI_API_KEY=sk-...
 ```
 
+To avoid hitting TPM rate limits, you can control both concurrency and pacing:
+
+```bash
+# Limit how many scenarios run in parallel (default: 5)
+export EVAL_CONCURRENCY=2
+
+# Add a minimum gap (in ms) between LLM API calls (default: 0, no throttle)
+export EVAL_PAUSE_MS=2000
+```
+
+These can also be set via CLI flags (`--concurrency` / `-c` and `--pause` / `-p`), which take precedence over the env vars. The pause applies globally across all concurrent scenarios -- LLM calls are serialized through a shared throttle.
+
 ## Running evals
 
 ```bash
@@ -52,6 +64,12 @@ npm run test:evals -- --scenario parameter-selection
 
 # Use a different model
 npm run test:evals -- --model gpt-4o
+
+# Limit concurrency to avoid rate limits (default: 5)
+npm run test:evals -- --concurrency 2
+
+# Add a 2-second pause between LLM calls (combines with concurrency)
+npm run test:evals -- --concurrency 1 --pause 2000
 
 # Show help
 npm run test:evals -- --help

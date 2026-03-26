@@ -11,6 +11,26 @@ import type {
 } from "./types.js";
 
 const MAX_TURNS = 20;
+const DEFAULT_CONCURRENCY = 5;
+
+async function runWithConcurrency<T>(
+  tasks: Array<() => Promise<T>>,
+  concurrency: number,
+): Promise<T[]> {
+  const results: T[] = new Array(tasks.length);
+  let nextIndex = 0;
+
+  async function worker(): Promise<void> {
+    while (nextIndex < tasks.length) {
+      const idx = nextIndex++;
+      results[idx] = await tasks[idx]();
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(concurrency, tasks.length) }, () => worker());
+  await Promise.all(workers);
+  return results;
+}
 
 interface McpTool {
   name: string;
@@ -136,14 +156,15 @@ export async function runAllScenarios(
   groups: Record<string, Scenario[]>,
   provider: LLMProvider,
   model: string,
+  concurrency: number = DEFAULT_CONCURRENCY,
 ): Promise<EvalResult> {
   const totalScenarios = Object.values(groups).reduce((n, s) => n + s.length, 0);
-  console.error(`  Running ${totalScenarios} scenarios concurrently...\n`);
+  console.error(`  Running ${totalScenarios} scenarios (concurrency: ${concurrency})...\n`);
 
   const groupEntries = Object.entries(groups);
 
-  const allPromises = groupEntries.flatMap(([groupName, scenarios]) =>
-    scenarios.map(async (scenario): Promise<ScenarioResult> => {
+  const tasks = groupEntries.flatMap(([groupName, scenarios]) =>
+    scenarios.map((scenario) => async (): Promise<ScenarioResult> => {
       try {
         const result = await runScenario(scenario, provider, groupName);
         const status = result.passed ? "PASS" : "FAIL";
@@ -166,7 +187,7 @@ export async function runAllScenarios(
     }),
   );
 
-  const results = await Promise.all(allPromises);
+  const results = await runWithConcurrency(tasks, concurrency);
 
   const evalGroups: EvalGroupResult[] = groupEntries.map(([groupName]) => {
     const groupResults = results.filter((r) => r.group === groupName);

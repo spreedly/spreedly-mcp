@@ -23,6 +23,8 @@ export const ShowCardRefresherInquirySchema = z
 
 export const ListCardRefresherInquiriesSchema = z
   .object({
+    order: z.enum(["asc", "desc"]).optional().describe("Sort order"),
     since_token: z.string().optional().describe("Pagination token"),
+    count: z.string().optional().describe("The number of inquiries to return"),
   })
   .strict();

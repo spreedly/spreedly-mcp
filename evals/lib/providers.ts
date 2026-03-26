@@ -60,6 +60,26 @@ export function createProvider(model?: string): LLMProvider {
   };
 }
 
+export function withThrottle(provider: LLMProvider, pauseMs: number): LLMProvider {
+  let pending: Promise<void> = Promise.resolve();
+  const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+  return {
+    chat(messages, tools) {
+      const next = pending.then(async () => {
+        const result = await provider.chat(messages, tools);
+        await sleep(pauseMs);
+        return result;
+      });
+      pending = next.then(
+        () => {},
+        () => {},
+      );
+      return next;
+    },
+  };
+}
+
 function convertMessage(msg: LLMMessage): OpenAI.Chat.Completions.ChatCompletionMessageParam {
   if (msg.role === "tool") {
     return {
