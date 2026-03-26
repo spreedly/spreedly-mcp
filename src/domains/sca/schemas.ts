@@ -36,9 +36,7 @@ export const ScaAuthenticateSchema = z
     sca_provider_key: z
       .string()
       .describe("Token of the SCA Provider to authenticate against (path parameter)"),
-    payment_method_token: z
-      .string()
-      .describe("Token of the payment method to authenticate"),
+    payment_method_token: z.string().describe("Token of the payment method to authenticate"),
     browser_info: z
       .string()
       .describe(
@@ -99,27 +97,17 @@ export const CreateScaProviderSchema = z
       .describe("Token of the Merchant Profile to associate this SCA Provider with"),
     type: z
       .literal("spreedly")
-      .describe(
-        "Type of SCA Provider. Currently only `spreedly` is supported (case sensitive).",
-      ),
+      .describe("Type of SCA Provider. Currently only `spreedly` is supported (case sensitive)."),
     sandbox: z
       .boolean()
       .optional()
-      .describe(
-        "When `true`, provisions the SCA Provider in sandbox mode. Defaults to `false`.",
-      ),
+      .describe("When `true`, provisions the SCA Provider in sandbox mode. Defaults to `false`."),
     visa: ScaVisaDetailsSchema.optional().describe(
       "Visa card-network registration. Required if Visa transactions should use this SCA Provider.",
     ),
-    mastercard: ScaCardDetailsSchema.optional().describe(
-      "Mastercard card-network registration.",
-    ),
-    amex: ScaCardDetailsSchema.optional().describe(
-      "American Express card-network registration.",
-    ),
-    discover: ScaCardDetailsSchema.optional().describe(
-      "Discover card-network registration.",
-    ),
+    mastercard: ScaCardDetailsSchema.optional().describe("Mastercard card-network registration."),
+    amex: ScaCardDetailsSchema.optional().describe("American Express card-network registration."),
+    discover: ScaCardDetailsSchema.optional().describe("Discover card-network registration."),
   })
   .describe(
     "SCA Provider configuration. `merchant_profile_key` and `type` are required. At least one card-network object must be provided.",

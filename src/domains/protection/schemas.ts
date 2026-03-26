@@ -46,10 +46,7 @@ export const ListProtectionEventsSchema = z
     order: z.enum(["asc", "desc"]).optional().describe("Sort order"),
     since_token: z.string().optional().describe("Pagination token"),
     count: z.string().optional().describe("Number of events to return"),
-    state: z
-      .enum(["pending", "succeeded", "failed"])
-      .optional()
-      .describe("Filter events by state"),
+    state: z.enum(["pending", "succeeded", "failed"]).optional().describe("Filter events by state"),
   })
   .strict();
 
@@ -90,12 +87,8 @@ export const CreateProtectionProviderSchema = z
     diners: ProtectionCardDetailsSchema.optional().describe(
       "Diners Club card-network registration.",
     ),
-    jcb: ProtectionCardDetailsSchema.optional().describe(
-      "JCB card-network registration.",
-    ),
-    dankort: ProtectionCardDetailsSchema.optional().describe(
-      "Dankort card-network registration.",
-    ),
+    jcb: ProtectionCardDetailsSchema.optional().describe("JCB card-network registration."),
+    dankort: ProtectionCardDetailsSchema.optional().describe("Dankort card-network registration."),
     union_pay: ProtectionCardDetailsSchema.optional().describe(
       "UnionPay card-network registration.",
     ),

@@ -8,7 +8,7 @@ export const CreateEnvironmentSchema = z
           .string()
           .max(100)
           .describe(
-            "Human-readable name for the environment (max 100 chars; must not contain \\ | # $ % { } ; \" < >).",
+            'Human-readable name for the environment (max 100 chars; must not contain \\ | # $ % { } ; " < >).',
           ),
         callback_url: z
           .string()
@@ -34,7 +34,9 @@ export const CreateEnvironmentSchema = z
         iframe_enhanced_security_enabled: z
           .boolean()
           .optional()
-          .describe("When `true`, the environment is enabled to pass enhanced security fields to iFrame init."),
+          .describe(
+            "When `true`, the environment is enabled to pass enhanced security fields to iFrame init.",
+          ),
       })
       .describe("Environment creation payload"),
   })
@@ -78,10 +80,7 @@ export const UpdateEnvironmentSchema = z
           .boolean()
           .optional()
           .describe("Updated Advanced Vaulting flag."),
-        smart_routing_enabled: z
-          .boolean()
-          .optional()
-          .describe("Whether to enable smart routing."),
+        smart_routing_enabled: z.boolean().optional().describe("Whether to enable smart routing."),
         default_gateway_token: z
           .string()
           .optional()
@@ -89,7 +88,9 @@ export const UpdateEnvironmentSchema = z
         iframe_enhanced_security_enabled: z
           .boolean()
           .optional()
-          .describe("When `true`, the environment is enabled to pass enhanced security fields to iFrame init."),
+          .describe(
+            "When `true`, the environment is enabled to pass enhanced security fields to iFrame init.",
+          ),
       })
       .describe("Fields to update on the environment"),
   })

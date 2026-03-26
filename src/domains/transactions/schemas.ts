@@ -1,4 +1,12 @@
 import { z } from "zod";
+import {
+  CommonGatewayTransactionFields,
+  CreditCardSchema,
+  ApplePaySchema,
+  GooglePaySchema,
+  BankAccountSchema,
+  RecoverParamsSchema,
+} from "../commons/schemas";
 
 export const ListTransactionsSchema = z
   .object({
@@ -10,7 +18,7 @@ export const ListTransactionsSchema = z
         "gateway_processing_result_unknown",
       ])
       .optional()
-      .describe("transaction state to return"),
+      .describe("Filter transactions by state"),
     count: z.string().optional().describe("Number of transactions to return"),
     since_token: z.string().optional().describe("Pagination token"),
     order: z.enum(["asc", "desc"]).optional().describe("Sort order"),
@@ -26,7 +34,10 @@ export const ShowTransactionSchema = z
 export const UpdateTransactionSchema = z
   .object({
     transaction_token: z.string().describe("The token of the transaction to update"),
-    metadata: z.record(z.string(), z.unknown()).optional().describe("Metadata fields to update"),
+    metadata: z
+      .record(z.string(), z.unknown())
+      .optional()
+      .describe("Metadata key-value pairs to update on the transaction"),
   })
   .strict();
 
@@ -38,7 +49,13 @@ export const CaptureTransactionSchema = z
       .int()
       .positive()
       .optional()
-      .describe("Amount in cents to capture (partial capture). Omit for full capture"),
+      .describe(
+        "Amount in cents for a partial capture. Omit to capture the full authorized amount",
+      ),
+    currency_code: z
+      .string()
+      .optional()
+      .describe("ISO 4217 currency code. Required if `amount` is provided for a partial capture"),
   })
   .strict();
 
@@ -56,7 +73,7 @@ export const CreditTransactionSchema = z
       .int()
       .positive()
       .optional()
-      .describe("Amount in cents to refund (partial refund). Omit for full refund"),
+      .describe("Amount in cents for a partial refund. Omit to refund the full transaction amount"),
     currency_code: z.string().length(3).optional().describe("ISO 4217 currency code"),
   })
   .strict();
@@ -67,11 +84,61 @@ export const CompleteTransactionSchema = z
   })
   .strict();
 
-export const ConfirmTransactionSchema = z
-  .object({
-    transaction_token: z.string().describe("The token of the transaction to confirm"),
-  })
-  .strict();
+export const ConfirmTransactionSchema = CommonGatewayTransactionFields.extend({
+  transaction_token: z.string().describe("The token of the pending offsite transaction to confirm"),
+  amount: z.number().int().positive().describe("Amount in cents to charge (e.g., 1000 = $10.00)"),
+  currency_code: z.string().describe("ISO 4217 currency code, e.g. 'USD'"),
+
+  // All payment method pass-ins are valid on a reference purchase too
+  payment_method_token: z
+    .string()
+    .optional()
+    .describe("Token of an existing Spreedly vault payment method"),
+  credit_card: CreditCardSchema.optional(),
+  bank_account: BankAccountSchema.optional(),
+  apple_pay: ApplePaySchema.optional(),
+  google_pay: GooglePaySchema.optional(),
+  sca_authentication_token: z
+    .string()
+    .optional()
+    .describe("Token from a completed SCA / 3DS session"),
+
+  // Purchase-specific optional fields
+  browser_info: z
+    .string()
+    .optional()
+    .describe(
+      "Serialized browser info from Spreedly.ThreeDS.serialize; required for 3DS2 web flows",
+    ),
+  ignore_failed_authentication_result: z
+    .boolean()
+    .optional()
+    .describe("Complete 3DS2 Global transaction even when authentication fails"),
+
+  retry: RecoverParamsSchema.optional(),
+
+  // Composer-only normalized fields
+  workflow_key: z
+    .string()
+    .optional()
+    .describe("Spreedly workflow key; Composer / /transactions resource only"),
+  order_data: z
+    .record(z.string(), z.unknown())
+    .optional()
+    .describe("Normalized order fields; Composer / /transactions resource only"),
+  customer_data: z
+    .record(z.string(), z.unknown())
+    .optional()
+    .describe("Normalized cardholder fields; Composer / /transactions resource only"),
+  risk_data: z
+    .record(z.string(), z.unknown())
+    .optional()
+    .describe("Normalized risk fields; Composer / /transactions resource only"),
+  merchant_metadata: z
+    .record(z.string(), z.unknown())
+    .optional()
+    .describe("Normalized merchant fields; Composer / /transactions resource only"),
+}).strict();
 
 export const TranscriptTransactionSchema = z
   .object({
@@ -79,10 +146,60 @@ export const TranscriptTransactionSchema = z
   })
   .strict();
 
-export const PurchaseReferenceSchema = z
-  .object({
-    transaction_token: z.string().describe("The token of the prior transaction to reference"),
-    amount: z.number().int().positive().describe("Amount in cents"),
-    currency_code: z.string().length(3).describe("ISO 4217 currency code"),
-  })
-  .strict();
+export const PurchaseReferenceSchema = CommonGatewayTransactionFields.extend({
+  transaction_token: z
+    .string()
+    .describe("The token of the prior authorized transaction to reference for this purchase"),
+  amount: z.number().int().positive().describe("Amount in cents to charge (e.g., 1000 = $10.00)"),
+  currency_code: z.string().describe("ISO 4217 currency code, e.g. 'USD'"),
+
+  // All payment method pass-ins are valid on a reference purchase too
+  payment_method_token: z
+    .string()
+    .optional()
+    .describe("Token of an existing Spreedly vault payment method"),
+  credit_card: CreditCardSchema.optional(),
+  bank_account: BankAccountSchema.optional(),
+  apple_pay: ApplePaySchema.optional(),
+  google_pay: GooglePaySchema.optional(),
+  sca_authentication_token: z
+    .string()
+    .optional()
+    .describe("Token from a completed SCA / 3DS session"),
+
+  // Purchase-specific optional fields
+  browser_info: z
+    .string()
+    .optional()
+    .describe(
+      "Serialized browser info from Spreedly.ThreeDS.serialize; required for 3DS2 web flows",
+    ),
+  ignore_failed_authentication_result: z
+    .boolean()
+    .optional()
+    .describe("Complete 3DS2 Global transaction even when authentication fails"),
+
+  retry: RecoverParamsSchema.optional(),
+
+  // Composer-only normalized fields
+  workflow_key: z
+    .string()
+    .optional()
+    .describe("Spreedly workflow key; Composer / /transactions resource only"),
+  order_data: z
+    .record(z.string(), z.unknown())
+    .optional()
+    .describe("Normalized order fields; Composer / /transactions resource only"),
+  customer_data: z
+    .record(z.string(), z.unknown())
+    .optional()
+    .describe("Normalized cardholder fields; Composer / /transactions resource only"),
+  risk_data: z
+    .record(z.string(), z.unknown())
+    .optional()
+    .describe("Normalized risk fields; Composer / /transactions resource only"),
+  merchant_metadata: z
+    .record(z.string(), z.unknown())
+    .optional()
+    .describe("Normalized merchant fields; Composer / /transactions resource only"),
+}).strict();
