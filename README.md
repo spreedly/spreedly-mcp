@@ -275,7 +275,24 @@ The server emits exactly **one** audit entry per tool invocation. However, MCP h
 - Error messages are redacted to prevent credential leakage
 - Tool descriptions are static constants hardened against prompt injection
 - Audit logs never contain request/response bodies, full keys, or secrets
-- See [SECURITY.md](SECURITY.md) for the full security policy
+- See [SECURITY.md](SECURITY.md) for vulnerability reporting
+- See [Security Guide](docs/security-guide.md) for architecture details, credential management, and deployment recommendations
+
+## Shared Responsibility
+
+The MCP server runs in your infrastructure. Security is shared between the server and your organization:
+
+| Category | Spreedly MCP Server | Customer |
+| --- | --- | --- |
+| **Credential security** | Isolates in closure; never serializable or logged | Provisions, rotates, secures storage |
+| **Transport security** | Enforces HTTPS; redacts credentials from errors | Network segmentation, access controls |
+| **Input validation** | Sanitizes inputs; rejects injection attempts | Configures Tool Access Policy |
+| **Audit logging** | Emits structured JSON to stderr | Routes to SIEM, retains 12+ months, monitors |
+| **AI provider** | Hardens tool descriptions against prompt injection | Selects provider, evaluates data privacy |
+| **Deployment** | Minimal dependencies; npm provenance attestation | Isolates server process, keeps updated |
+| **PCI compliance** | No cardholder data stored outside API calls | Maintains own PCI posture |
+
+For credential rotation procedures, deployment hardening, and the full model, see the [Security Guide](docs/security-guide.md).
 
 ## Development
 
