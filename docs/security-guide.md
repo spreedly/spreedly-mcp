@@ -90,8 +90,8 @@ The Spreedly MCP server is a client-side component that runs in your infrastruct
 | --- | --- | --- |
 | **Credential security** | Isolates credentials in closure; never serializable, never logged | Provisions, rotates, and secures credential storage (env vars, secret managers) |
 | **Transport security** | Enforces HTTPS for all Spreedly API calls; redacts credentials from errors | Network segmentation, firewall rules, restricting who can reach the MCP server |
-| **Input validation** | Sanitizes all inputs; rejects injection attempts and malformed tokens | Configures [Tool Access Policy](../README.md#tool-access-policy) to limit available tool categories |
-| **Audit logging** | Emits structured JSON audit events to stderr for every tool invocation | Captures stderr, routes to SIEM/log aggregator, retains 12+ months, monitors and alerts |
+| **Input validation** | Validates and sanitizes tool inputs | Configures [Tool Access Policy](../README.md#tool-access-policy) to limit available tool categories |
+| **Audit logging** | Emits structured JSON audit events to stderr for every tool invocation | Captures stderr, routes to SIEM/log aggregator; retention, monitoring, and alerting |
 | **AI provider** | Hardens tool descriptions against prompt injection and tool shadowing | Selects AI provider; evaluates data handling, privacy policies, and jurisdictional requirements |
 | **Deployment** | Ships with minimal dependencies; publishes with npm provenance attestation | Isolates MCP server process, restricts access, keeps package updated |
 | **PCI compliance** | Does not store, process, or transmit cardholder data outside of API calls to Spreedly | Maintains own PCI compliance posture; see [Spreedly PCI guidance](https://www.spreedly.com/pci) |
