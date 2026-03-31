@@ -86,15 +86,15 @@ Environment-scoped secrets follow the principle of least privilege and limit bla
 
 The Spreedly MCP server is a client-side component that runs in your infrastructure and calls the Spreedly API on your behalf. Security is a shared responsibility between the MCP server and your organization.
 
-| Category | Spreedly MCP Server | Customer |
-| --- | --- | --- |
-| **Credential security** | Isolates credentials in closure; never serializable, never logged | Provisions, rotates, and secures credential storage (env vars, secret managers) |
-| **Transport security** | Enforces HTTPS for all Spreedly API calls; redacts credentials from errors | Network segmentation, firewall rules, restricting who can reach the MCP server |
-| **Input validation** | Validates and sanitizes tool inputs | Configures [Tool Access Policy](../README.md#tool-access-policy) to limit available tool categories |
-| **Audit logging** | Emits structured JSON audit events to stderr for every tool invocation | Captures stderr, routes to SIEM/log aggregator; retention, monitoring, and alerting |
-| **AI provider** | Hardens tool descriptions against prompt injection and tool shadowing | Selects AI provider; evaluates data handling, privacy policies, and jurisdictional requirements |
-| **Deployment** | Ships with minimal dependencies; publishes with npm provenance attestation | Isolates MCP server process, restricts access, keeps package updated |
-| **PCI compliance** | Does not store, process, or transmit cardholder data outside of API calls to Spreedly | Maintains own PCI compliance posture; see [Spreedly PCI guidance](https://www.spreedly.com/pci) |
+| Category                | Spreedly MCP Server                                                                   | Customer                                                                                            |
+| ----------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| **Credential security** | Isolates credentials in closure; never serializable, never logged                     | Provisions, rotates, and secures credential storage (env vars, secret managers)                     |
+| **Transport security**  | Enforces HTTPS for all Spreedly API calls; redacts credentials from errors            | Network segmentation, firewall rules, restricting who can reach the MCP server                      |
+| **Input validation**    | Validates and sanitizes tool inputs                                                   | Configures [Tool Access Policy](../README.md#tool-access-policy) to limit available tool categories |
+| **Audit logging**       | Emits structured JSON audit events to stderr for every tool invocation                | Captures stderr, routes to SIEM/log aggregator; retention, monitoring, and alerting                 |
+| **AI provider**         | Hardens tool descriptions against prompt injection and tool shadowing                 | Selects AI provider; evaluates data handling, privacy policies, and jurisdictional requirements     |
+| **Deployment**          | Ships with minimal dependencies; publishes with npm provenance attestation            | Isolates MCP server process, restricts access, keeps package updated                                |
+| **PCI compliance**      | Does not store, process, or transmit cardholder data outside of API calls to Spreedly | Maintains own PCI compliance posture; see [Spreedly PCI guidance](https://www.spreedly.com/pci)     |
 
 For audit logging responsibilities in detail, see the [Audit Logging](../README.md#audit-logging) section of the README.
 

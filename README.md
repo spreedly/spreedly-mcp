@@ -282,15 +282,15 @@ The server emits exactly **one** audit entry per tool invocation. However, MCP h
 
 The MCP server runs in your infrastructure. Security is shared between the server and your organization:
 
-| Category | Spreedly MCP Server | Customer |
-| --- | --- | --- |
-| **Credential security** | Isolates in closure; never serializable or logged | Provisions, rotates, secures storage |
-| **Transport security** | Enforces HTTPS; redacts credentials from errors | Network segmentation, access controls |
-| **Input validation** | Validates and sanitizes tool inputs | Configures Tool Access Policy |
-| **Audit logging** | Emits structured JSON to stderr | Routes to SIEM; retention, monitoring |
-| **AI provider** | Hardens tool descriptions against prompt injection | Selects provider, evaluates data privacy |
-| **Deployment** | Minimal dependencies; npm provenance attestation | Isolates server process, keeps updated |
-| **PCI compliance** | No cardholder data stored outside API calls | Maintains own PCI posture |
+| Category                | Spreedly MCP Server                                | Customer                                 |
+| ----------------------- | -------------------------------------------------- | ---------------------------------------- |
+| **Credential security** | Isolates in closure; never serializable or logged  | Provisions, rotates, secures storage     |
+| **Transport security**  | Enforces HTTPS; redacts credentials from errors    | Network segmentation, access controls    |
+| **Input validation**    | Validates and sanitizes tool inputs                | Configures Tool Access Policy            |
+| **Audit logging**       | Emits structured JSON to stderr                    | Routes to SIEM; retention, monitoring    |
+| **AI provider**         | Hardens tool descriptions against prompt injection | Selects provider, evaluates data privacy |
+| **Deployment**          | Minimal dependencies; npm provenance attestation   | Isolates server process, keeps updated   |
+| **PCI compliance**      | No cardholder data stored outside API calls        | Maintains own PCI posture                |
 
 For credential rotation procedures, deployment hardening, and the full model, see the [Security Guide](docs/security-guide.md).
 
