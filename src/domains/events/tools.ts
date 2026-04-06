@@ -1,12 +1,7 @@
 import { TOOL_DESCRIPTIONS } from "../../security/descriptions.js";
+import { buildUrl } from "../../transport/path.js";
 import type { ToolDefinition } from "../../types/shared.js";
 import { ListEventsSchema, ShowEventSchema } from "./schemas.js";
-
-function buildQuery(params: Record<string, string | undefined>): string {
-  const entries = Object.entries(params).filter(([, v]) => v !== undefined);
-  if (entries.length === 0) return "";
-  return "?" + entries.map(([k, v]) => `${k}=${encodeURIComponent(v!)}`).join("&");
-}
 
 export const eventTools: ToolDefinition[] = [
   {
@@ -15,9 +10,18 @@ export const eventTools: ToolDefinition[] = [
     annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ListEventsSchema.shape,
     handler: async (params, { transport }) => {
-      const { since_token } = params as { since_token?: string };
-      const query = buildQuery({ since_token });
-      const res = await transport.request("GET", `/events.json${query}`);
+      const { since_token, order, count, event_type } = params as {
+        since_token?: string;
+        order?: string;
+        count?: string;
+        event_type?: string;
+      };
+      const res = await transport.request(
+        "GET",
+        buildUrl("/events.json", {
+          query: { since_token, order, count, event_type },
+        }),
+      );
       return res.data;
     },
   },
@@ -28,7 +32,10 @@ export const eventTools: ToolDefinition[] = [
     schema: ShowEventSchema.shape,
     handler: async (params, { transport }) => {
       const { event_id } = params as { event_id: string };
-      const res = await transport.request("GET", `/events/${event_id}.json`);
+      const res = await transport.request(
+        "GET",
+        buildUrl("/events/:event_id.json", { path: { event_id } }),
+      );
       return res.data;
     },
   },

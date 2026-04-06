@@ -30,6 +30,18 @@ describe("environment tools", () => {
     expect(result).toEqual(list);
   });
 
+  it("forwards environment query params safely", async () => {
+    const list = { environments: [fakeEnvironment().environment] };
+    const { transport, calls } = createMockTransport(
+      new Map([["GET /environments.json", { data: list }]]),
+    );
+    await findTool("spreedly_environment_list").handler(
+      { since_token: "env/next#1", order: "asc", count: "40" },
+      { transport },
+    );
+    expect(calls[0].path).toBe("/environments.json?since_token=env%2Fnext%231&order=asc&count=40");
+  });
+
   it("shows an environment", async () => {
     const { transport } = createMockTransport(
       new Map([["GET /environments/FakeEnvKey_env001.json", { data: fakeEnvironment() }]]),

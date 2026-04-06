@@ -38,6 +38,15 @@ describe("gateway tools", () => {
       const result = await tool.handler({}, { transport });
       expect(result).toEqual(fakeGatewayList());
     });
+
+    it("forwards count in list queries safely", async () => {
+      const { transport, calls } = createMockTransport(
+        new Map([["GET /gateways.json", { data: fakeGatewayList() }]]),
+      );
+      const tool = findTool("spreedly_gateway_list");
+      await tool.handler({ since_token: "../cursor#1", order: "asc", count: "50" }, { transport });
+      expect(calls[0].path).toBe("/gateways.json?since_token=..%2Fcursor%231&order=asc&count=50");
+    });
   });
 
   describe("spreedly_gateway_show", () => {
@@ -99,6 +108,27 @@ describe("gateway tools", () => {
       const tool = findTool("spreedly_gateway_list_transactions");
       const result = await tool.handler({ gateway_token: "FakeGWToken_abc123" }, { transport });
       expect(result).toEqual(fakeTransactionList());
+    });
+
+    it("encodes query parameters safely", async () => {
+      const { transport, calls } = createMockTransport(
+        new Map([
+          ["GET /gateways/FakeGWToken_abc123/transactions.json", { data: fakeTransactionList() }],
+        ]),
+      );
+      const tool = findTool("spreedly_gateway_list_transactions");
+      await tool.handler(
+        {
+          gateway_token: "FakeGWToken_abc123",
+          since_token: "../next?page#frag",
+          order: "desc",
+          state: "succeeded",
+        },
+        { transport },
+      );
+      expect(calls[0].path).toBe(
+        "/gateways/FakeGWToken_abc123/transactions.json?since_token=..%2Fnext%3Fpage%23frag&order=desc&state=succeeded",
+      );
     });
   });
 

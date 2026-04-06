@@ -262,6 +262,26 @@ describe("MCP callTool through full stack", () => {
     expect(harness.spreedlyCalls[0].path).toBe("/gateways.json");
   });
 
+  it("rejects malformed identifiers before issuing any transport request", async () => {
+    harness = await createMcpHarness(ALL_DISABLED);
+
+    const result = await harness.client.callTool({
+      name: "spreedly_payment_method_show",
+      arguments: {
+        payment_method_token: "../../v1/environments/test.json#",
+      },
+    });
+
+    expect(result.isError).toBe(true);
+    const text = (result.content as Array<{ type: string; text: string }>)[0].text;
+    const parsed = JSON.parse(text);
+    expect(parsed.error.httpStatusCode).toBeNull();
+    expect(parsed.error.message).toContain(
+      'Invalid identifier format in field "payment_method_token".',
+    );
+    expect(harness.spreedlyCalls).toHaveLength(0);
+  });
+
   it("write tools go through middleware and reach the mock transport", async () => {
     const mockResponses = new Map<string, MockResponseValue>([
       [

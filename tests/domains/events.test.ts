@@ -17,6 +17,25 @@ describe("event tools", () => {
     expect(result).toEqual(list);
   });
 
+  it("encodes event list query parameters safely", async () => {
+    const list = { events: [fakeEvent().event] };
+    const { transport, calls } = createMockTransport(
+      new Map([["GET /events.json", { data: list }]]),
+    );
+    await findTool("spreedly_event_list").handler(
+      {
+        since_token: "../after?cursor#frag",
+        order: "desc",
+        count: "10",
+        event_type: "AddGateway",
+      },
+      { transport },
+    );
+    expect(calls[0].path).toBe(
+      "/events.json?since_token=..%2Fafter%3Fcursor%23frag&order=desc&count=10&event_type=AddGateway",
+    );
+  });
+
   it("shows an event", async () => {
     const { transport } = createMockTransport(
       new Map([["GET /events/123.json", { data: fakeEvent() }]]),

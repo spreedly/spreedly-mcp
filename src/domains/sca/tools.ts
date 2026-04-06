@@ -1,4 +1,5 @@
 import { TOOL_DESCRIPTIONS } from "../../security/descriptions.js";
+import { buildUrl } from "../../transport/path.js";
 import type { ToolDefinition } from "../../types/shared.js";
 import {
   ScaAuthenticateSchema,
@@ -20,7 +21,9 @@ export const scaTools: ToolDefinition[] = [
       const body = { transaction: txnParams };
       const res = await transport.request(
         "POST",
-        `/sca/providers/${sca_provider_key}/authenticate.json`,
+        buildUrl("/sca/providers/:sca_provider_key/authenticate.json", {
+          path: { sca_provider_key },
+        }),
         { body },
       );
       return res.data;
@@ -43,7 +46,10 @@ export const scaTools: ToolDefinition[] = [
     schema: ShowScaProviderSchema.shape,
     handler: async (params, { transport }) => {
       const { sca_provider_token } = params as { sca_provider_token: string };
-      const res = await transport.request("GET", `/sca/providers/${sca_provider_token}.json`);
+      const res = await transport.request(
+        "GET",
+        buildUrl("/sca/providers/:sca_provider_token.json", { path: { sca_provider_token } }),
+      );
       return res.data;
     },
   },

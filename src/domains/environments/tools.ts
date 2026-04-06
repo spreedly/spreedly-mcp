@@ -1,4 +1,5 @@
 import { TOOL_DESCRIPTIONS } from "../../security/descriptions.js";
+import { buildUrl } from "../../transport/path.js";
 import type { ToolDefinition } from "../../types/shared.js";
 import {
   CreateEnvironmentSchema,
@@ -6,12 +7,6 @@ import {
   ShowEnvironmentSchema,
   UpdateEnvironmentSchema,
 } from "./schemas.js";
-
-function buildQuery(params: Record<string, string | undefined>): string {
-  const entries = Object.entries(params).filter(([, v]) => v !== undefined);
-  if (entries.length === 0) return "";
-  return "?" + entries.map(([k, v]) => `${k}=${encodeURIComponent(v!)}`).join("&");
-}
 
 export const environmentTools: ToolDefinition[] = [
   {
@@ -30,9 +25,15 @@ export const environmentTools: ToolDefinition[] = [
     annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ListEnvironmentsSchema.shape,
     handler: async (params, { transport }) => {
-      const { since_token } = params as { since_token?: string };
-      const query = buildQuery({ since_token });
-      const res = await transport.request("GET", `/environments.json${query}`);
+      const { since_token, order, count } = params as {
+        since_token?: string;
+        order?: string;
+        count?: string;
+      };
+      const res = await transport.request(
+        "GET",
+        buildUrl("/environments.json", { query: { since_token, order, count } }),
+      );
       return res.data;
     },
   },
@@ -43,7 +44,10 @@ export const environmentTools: ToolDefinition[] = [
     schema: ShowEnvironmentSchema.shape,
     handler: async (params, { transport }) => {
       const { environment_key } = params as { environment_key: string };
-      const res = await transport.request("GET", `/environments/${environment_key}.json`);
+      const res = await transport.request(
+        "GET",
+        buildUrl("/environments/:environment_key.json", { path: { environment_key } }),
+      );
       return res.data;
     },
   },
@@ -57,9 +61,13 @@ export const environmentTools: ToolDefinition[] = [
         environment_key: string;
         environment: Record<string, unknown>;
       };
-      const res = await transport.request("PUT", `/environments/${environment_key}.json`, {
-        body: { environment },
-      });
+      const res = await transport.request(
+        "PUT",
+        buildUrl("/environments/:environment_key.json", { path: { environment_key } }),
+        {
+          body: { environment },
+        },
+      );
       return res.data;
     },
   },

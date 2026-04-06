@@ -1,4 +1,5 @@
 import { TOOL_DESCRIPTIONS } from "../../security/descriptions.js";
+import { buildUrl } from "../../transport/path.js";
 import type { ToolDefinition } from "../../types/shared.js";
 import { CardMetadataSchema, TokenStatusSchema } from "./schemas.js";
 
@@ -12,7 +13,9 @@ export const networkTokenizationTools: ToolDefinition[] = [
       const { payment_method_token } = params as { payment_method_token: string };
       const res = await transport.request(
         "GET",
-        `/network_tokenization/card_metadata.json?payment_method_token=${encodeURIComponent(payment_method_token)}`,
+        buildUrl("/network_tokenization/card_metadata.json", {
+          query: { payment_method_token },
+        }),
       );
       return res.data;
     },
@@ -26,7 +29,9 @@ export const networkTokenizationTools: ToolDefinition[] = [
       const { payment_method_token } = params as { payment_method_token: string };
       const res = await transport.request(
         "GET",
-        `/network_tokenization/token_status.json?payment_method_token=${encodeURIComponent(payment_method_token)}`,
+        buildUrl("/network_tokenization/token_status.json", {
+          query: { payment_method_token },
+        }),
       );
       return res.data;
     },

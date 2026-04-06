@@ -50,6 +50,20 @@ describe("card refresher tools", () => {
     expect(result).toEqual(list);
   });
 
+  it("forwards card refresher query params safely", async () => {
+    const list = { inquiries: [{ token: "inq1" }, { token: "inq2" }] };
+    const { transport, calls } = createMockTransport(
+      new Map([["GET /card_refresher/inquiries.json", { data: list }]]),
+    );
+    await findTool("spreedly_card_refresher_list_inquiries").handler(
+      { since_token: "inq/next#1", order: "asc", count: "8" },
+      { transport },
+    );
+    expect(calls[0].path).toBe(
+      "/card_refresher/inquiries.json?since_token=inq%2Fnext%231&order=asc&count=8",
+    );
+  });
+
   it("has correct number of tools", () => {
     expect(cardRefresherTools.length).toBe(3);
   });

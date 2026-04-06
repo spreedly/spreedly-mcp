@@ -1,4 +1,5 @@
 import { TOOL_DESCRIPTIONS } from "../../security/descriptions.js";
+import { buildUrl } from "../../transport/path.js";
 import type { ToolDefinition } from "../../types/shared.js";
 import {
   ListTransactionsSchema,
@@ -12,12 +13,6 @@ import {
   TranscriptTransactionSchema,
 } from "./schemas.js";
 
-function buildQuery(params: Record<string, string | undefined>): string {
-  const entries = Object.entries(params).filter(([, v]) => v !== undefined);
-  if (entries.length === 0) return "";
-  return "?" + entries.map(([k, v]) => `${k}=${encodeURIComponent(v!)}`).join("&");
-}
-
 export const transactionTools: ToolDefinition[] = [
   {
     name: "spreedly_transaction_list",
@@ -25,9 +20,16 @@ export const transactionTools: ToolDefinition[] = [
     annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ListTransactionsSchema.shape,
     handler: async (params, { transport }) => {
-      const { since_token, order } = params as { since_token?: string; order?: string };
-      const query = buildQuery({ since_token, order });
-      const res = await transport.request("GET", `/transactions.json${query}`);
+      const { since_token, order, state, count } = params as {
+        since_token?: string;
+        order?: string;
+        state?: string;
+        count?: string;
+      };
+      const res = await transport.request(
+        "GET",
+        buildUrl("/transactions.json", { query: { since_token, order, state, count } }),
+      );
       return res.data;
     },
   },
@@ -38,7 +40,10 @@ export const transactionTools: ToolDefinition[] = [
     schema: ShowTransactionSchema.shape,
     handler: async (params, { transport }) => {
       const { transaction_token } = params as { transaction_token: string };
-      const res = await transport.request("GET", `/transactions/${transaction_token}.json`);
+      const res = await transport.request(
+        "GET",
+        buildUrl("/transactions/:transaction_token.json", { path: { transaction_token } }),
+      );
       return res.data;
     },
   },
@@ -54,9 +59,13 @@ export const transactionTools: ToolDefinition[] = [
         metadata?: Record<string, unknown>;
       };
       const body = { transaction: { metadata } };
-      const res = await transport.request("PATCH", `/transactions/${transaction_token}.json`, {
-        body,
-      });
+      const res = await transport.request(
+        "PATCH",
+        buildUrl("/transactions/:transaction_token.json", { path: { transaction_token } }),
+        {
+          body,
+        },
+      );
       return res.data;
     },
   },
@@ -77,7 +86,7 @@ export const transactionTools: ToolDefinition[] = [
       const body = { transaction: txnBody };
       const res = await transport.request(
         "POST",
-        `/transactions/${transaction_token}/capture.json`,
+        buildUrl("/transactions/:transaction_token/capture.json", { path: { transaction_token } }),
         { body },
       );
       return res.data;
@@ -90,7 +99,10 @@ export const transactionTools: ToolDefinition[] = [
     schema: VoidTransactionSchema.shape,
     handler: async (params, { transport }) => {
       const { transaction_token } = params as { transaction_token: string };
-      const res = await transport.request("POST", `/transactions/${transaction_token}/void.json`);
+      const res = await transport.request(
+        "POST",
+        buildUrl("/transactions/:transaction_token/void.json", { path: { transaction_token } }),
+      );
       return res.data;
     },
   },
@@ -111,7 +123,7 @@ export const transactionTools: ToolDefinition[] = [
       const body = { transaction: txnBody };
       const res = await transport.request(
         "POST",
-        `/transactions/${transaction_token}/credit.json`,
+        buildUrl("/transactions/:transaction_token/credit.json", { path: { transaction_token } }),
         { body },
       );
       return res.data;
@@ -126,7 +138,7 @@ export const transactionTools: ToolDefinition[] = [
       const { transaction_token } = params as { transaction_token: string };
       const res = await transport.request(
         "POST",
-        `/transactions/${transaction_token}/complete.json`,
+        buildUrl("/transactions/:transaction_token/complete.json", { path: { transaction_token } }),
       );
       return res.data;
     },
@@ -140,7 +152,7 @@ export const transactionTools: ToolDefinition[] = [
       const { transaction_token } = params as { transaction_token: string };
       const res = await transport.request(
         "POST",
-        `/transactions/${transaction_token}/confirm.json`,
+        buildUrl("/transactions/:transaction_token/confirm.json", { path: { transaction_token } }),
       );
       return res.data;
     },
@@ -152,7 +164,10 @@ export const transactionTools: ToolDefinition[] = [
     schema: TranscriptTransactionSchema.shape,
     handler: async (params, { transport }) => {
       const { transaction_token } = params as { transaction_token: string };
-      const res = await transport.request("GET", `/transactions/${transaction_token}/transcript`);
+      const res = await transport.request(
+        "GET",
+        buildUrl("/transactions/:transaction_token/transcript", { path: { transaction_token } }),
+      );
       return res.data;
     },
   },

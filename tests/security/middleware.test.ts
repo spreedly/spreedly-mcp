@@ -192,6 +192,25 @@ describe("wrapHandler middleware", () => {
     expect(result.content[0].text).toContain("Invalid input");
   });
 
+  it("rejects malformed identifiers before the handler runs", async () => {
+    const handler = vi.fn<ToolHandler<Record<string, unknown>, unknown>>(async () => ({
+      ok: true,
+    }));
+    const wrapped = wrapHandler("test_tool", handler, (raw) => raw as Record<string, unknown>);
+    const { transport, calls } = createMockTransport();
+
+    const result = await wrapped(
+      { payment_method_token: "../../v1/environments/test.json#" },
+      { transport, environmentKey: TEST_ENV_KEY },
+    );
+
+    expect(result.isError).toBe(true);
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.error.message).toBe('Invalid identifier format in field "payment_method_token".');
+    expect(handler).not.toHaveBeenCalled();
+    expect(calls).toHaveLength(0);
+  });
+
   it("redacts credentials from error messages", async () => {
     const handler: ToolHandler<Record<string, unknown>, unknown> = async () => {
       throw new Error("Failed with Basic dXNlcjpwYXNzd29yZA== in header");

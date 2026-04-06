@@ -1,4 +1,5 @@
 import { TOOL_DESCRIPTIONS } from "../../security/descriptions.js";
+import { buildUrl } from "../../transport/path.js";
 import type { ToolDefinition } from "../../types/shared.js";
 import {
   CreateGatewaySchema,
@@ -36,9 +37,15 @@ export const gatewayTools: ToolDefinition[] = [
     annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ListGatewaysSchema.shape,
     handler: async (params, { transport }) => {
-      const { since_token, order } = params as { since_token?: string; order?: string };
-      const query = buildQuery({ since_token, order });
-      const res = await transport.request("GET", `/gateways.json${query}`);
+      const { since_token, order, count } = params as {
+        since_token?: string;
+        order?: string;
+        count?: string;
+      };
+      const res = await transport.request(
+        "GET",
+        buildUrl("/gateways.json", { query: { since_token, order, count } }),
+      );
       return res.data;
     },
   },
@@ -49,7 +56,10 @@ export const gatewayTools: ToolDefinition[] = [
     schema: ShowGatewaySchema.shape,
     handler: async (params, { transport }) => {
       const { gateway_token } = params as { gateway_token: string };
-      const res = await transport.request("GET", `/gateways/${gateway_token}.json`);
+      const res = await transport.request(
+        "GET",
+        buildUrl("/gateways/:gateway_token.json", { path: { gateway_token } }),
+      );
       return res.data;
     },
   },
@@ -64,7 +74,11 @@ export const gatewayTools: ToolDefinition[] = [
         credentials?: Record<string, unknown>;
       };
       const body = { gateway: { ...credentials } };
-      const res = await transport.request("PUT", `/gateways/${gateway_token}.json`, { body });
+      const res = await transport.request(
+        "PUT",
+        buildUrl("/gateways/:gateway_token.json", { path: { gateway_token } }),
+        { body },
+      );
       return res.data;
     },
   },
@@ -76,7 +90,10 @@ export const gatewayTools: ToolDefinition[] = [
     schema: RetainGatewaySchema.shape,
     handler: async (params, { transport }) => {
       const { gateway_token } = params as { gateway_token: string };
-      const res = await transport.request("PUT", `/gateways/${gateway_token}/retain.json`);
+      const res = await transport.request(
+        "PUT",
+        buildUrl("/gateways/:gateway_token/retain.json", { path: { gateway_token } }),
+      );
       return res.data;
     },
   },
@@ -96,15 +113,18 @@ export const gatewayTools: ToolDefinition[] = [
     annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ListGatewayTransactionsSchema.shape,
     handler: async (params, { transport }) => {
-      const { gateway_token, since_token, order } = params as {
+      const { gateway_token, since_token, order, state } = params as {
         gateway_token: string;
         since_token?: string;
         order?: string;
+        state?: string;
       };
-      const query = buildQuery({ since_token, order });
       const res = await transport.request(
         "GET",
-        `/gateways/${gateway_token}/transactions.json${query}`,
+        buildUrl("/gateways/:gateway_token/transactions.json", {
+          path: { gateway_token },
+          query: { since_token, order, state },
+        }),
       );
       return res.data;
     },
@@ -119,9 +139,13 @@ export const gatewayTools: ToolDefinition[] = [
         gateway_token: string;
       };
       const body = { transaction: txnParams };
-      const res = await transport.request("POST", `/gateways/${gateway_token}/authorize.json`, {
-        body,
-      });
+      const res = await transport.request(
+        "POST",
+        buildUrl("/gateways/:gateway_token/authorize.json", { path: { gateway_token } }),
+        {
+          body,
+        },
+      );
       return res.data;
     },
   },
@@ -135,9 +159,13 @@ export const gatewayTools: ToolDefinition[] = [
         gateway_token: string;
       };
       const body = { transaction: txnParams };
-      const res = await transport.request("POST", `/gateways/${gateway_token}/purchase.json`, {
-        body,
-      });
+      const res = await transport.request(
+        "POST",
+        buildUrl("/gateways/:gateway_token/purchase.json", { path: { gateway_token } }),
+        {
+          body,
+        },
+      );
       return res.data;
     },
   },
@@ -152,9 +180,13 @@ export const gatewayTools: ToolDefinition[] = [
         gateway_token: string;
       };
       const body = { transaction: txnParams };
-      const res = await transport.request("POST", `/gateways/${gateway_token}/verify.json`, {
-        body,
-      });
+      const res = await transport.request(
+        "POST",
+        buildUrl("/gateways/:gateway_token/verify.json", { path: { gateway_token } }),
+        {
+          body,
+        },
+      );
       return res.data;
     },
   },
@@ -170,9 +202,13 @@ export const gatewayTools: ToolDefinition[] = [
         payment_method_token: string;
       };
       const body = { transaction: { payment_method_token } };
-      const res = await transport.request("POST", `/gateways/${gateway_token}/store.json`, {
-        body,
-      });
+      const res = await transport.request(
+        "POST",
+        buildUrl("/gateways/:gateway_token/store.json", { path: { gateway_token } }),
+        {
+          body,
+        },
+      );
       return res.data;
     },
   },
@@ -188,16 +224,10 @@ export const gatewayTools: ToolDefinition[] = [
       const body = { transaction: txnParams };
       const res = await transport.request(
         "POST",
-        `/gateways/${gateway_token}/general_credit.json`,
+        buildUrl("/gateways/:gateway_token/general_credit.json", { path: { gateway_token } }),
         { body },
       );
       return res.data;
     },
   },
 ];
-
-function buildQuery(params: Record<string, string | undefined>): string {
-  const entries = Object.entries(params).filter(([, v]) => v !== undefined);
-  if (entries.length === 0) return "";
-  return "?" + entries.map(([k, v]) => `${k}=${encodeURIComponent(v!)}`).join("&");
-}

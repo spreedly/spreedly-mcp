@@ -18,18 +18,44 @@ const MCP_PROTOCOL_FRAGMENTS = [
 const TOKEN_PATTERN = /^[a-zA-Z0-9_-]+$/;
 
 const MAX_FIELD_LENGTHS: Record<string, number> = {
-  token: 64,
+  identifier: 64,
   default: 10_000,
 };
+
+const STRICT_IDENTIFIER_FIELDS = new Set([
+  "token",
+  "gateway_token",
+  "payment_method_token",
+  "transaction_token",
+  "merchant_profile_token",
+  "merchant_profile_key",
+  "certificate_token",
+  "protection_provider_token",
+  "sca_provider_token",
+  "sca_provider_key",
+  "event_token",
+  "event_id",
+  "inquiry_token",
+  "since_token",
+  "environment_key",
+  "sub_merchant_key",
+]);
+
+function createSafeRecord(): Record<string, unknown> {
+  return Object.create(null) as Record<string, unknown>;
+}
+
+function isStrictIdentifierField(fieldName?: string): boolean {
+  return fieldName !== undefined && STRICT_IDENTIFIER_FIELDS.has(fieldName);
+}
 
 export function sanitizeString(value: string, fieldName?: string): string {
   let cleaned = value.replace(INVISIBLE_CHARS, "");
   cleaned = cleaned.trim();
 
-  const maxLen =
-    fieldName && fieldName.toLowerCase().includes("token")
-      ? MAX_FIELD_LENGTHS.token
-      : MAX_FIELD_LENGTHS.default;
+  const maxLen = isStrictIdentifierField(fieldName)
+    ? MAX_FIELD_LENGTHS.identifier
+    : MAX_FIELD_LENGTHS.default;
 
   if (cleaned.length > maxLen) {
     cleaned = cleaned.slice(0, maxLen);
@@ -47,8 +73,27 @@ export function isValidTokenFormat(value: string): boolean {
   return TOKEN_PATTERN.test(value) && value.length > 0 && value.length <= 64;
 }
 
+function assertValidIdentifierFormat(value: string, fieldName: string, inArray = false): void {
+  if (!isStrictIdentifierField(fieldName) || isValidTokenFormat(value)) {
+    return;
+  }
+
+  // Keep field-aware identifier policy at the shared input boundary. URL builders
+  // only encode already-sanitized values; they do not know whether a given param
+  // is meant to be a strict Spreedly identifier.
+  const location = inArray ? "array field" : "field";
+  throw new Error(`Invalid identifier format in ${location} "${fieldName}".`);
+}
+
+/**
+ * Recursively sanitizes tool arguments before schema validation and handler
+ * execution. `wrapHandler()` calls this for every registered tool invocation,
+ * so this is the shared boundary for trimming strings, stripping invisible
+ * characters, blocking prompt-injection fragments, and enforcing strict
+ * identifier formats before params are reshaped into URLs or request bodies.
+ */
 export function sanitizeParams(params: Record<string, unknown>): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
+  const result = createSafeRecord();
 
   for (const [key, value] of Object.entries(params)) {
     if (typeof value === "string") {
@@ -56,6 +101,7 @@ export function sanitizeParams(params: Record<string, unknown>): Record<string, 
       if (containsInjectionAttempt(sanitized)) {
         throw new Error(`Invalid input detected in field "${key}".`);
       }
+      assertValidIdentifierFormat(sanitized, key);
       result[key] = sanitized;
     } else if (Array.isArray(value)) {
       result[key] = value.map((item) => {
@@ -64,6 +110,7 @@ export function sanitizeParams(params: Record<string, unknown>): Record<string, 
           if (containsInjectionAttempt(sanitized)) {
             throw new Error(`Invalid input detected in array field "${key}".`);
           }
+          assertValidIdentifierFormat(sanitized, key, true);
           return sanitized;
         }
         if (item !== null && typeof item === "object") {
@@ -128,7 +175,9 @@ function redactString(value: string): string {
  * Recursively redacts credential-like values in an object, preserving values
  * in known-safe identifier fields (tokens, keys). The aggressive catch-all
  * regex acts as a safety net for any non-identifier field that contains a
- * credential-looking string.
+ * credential-looking string. `toToolResult()` uses this before serializing
+ * agent-facing success/error payloads, so transports and handlers can return
+ * raw API data without leaking secrets into MCP responses.
  */
 export function redactSensitiveValues(value: unknown, fieldName?: string): unknown {
   if (value === null || value === undefined) return value;
@@ -142,7 +191,7 @@ export function redactSensitiveValues(value: unknown, fieldName?: string): unkno
   }
 
   if (typeof value === "object") {
-    const result: Record<string, unknown> = {};
+    const result = createSafeRecord();
     for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
       result[key] = redactSensitiveValues(val, key);
     }

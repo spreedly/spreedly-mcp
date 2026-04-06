@@ -40,6 +40,20 @@ describe("merchant profile tools", () => {
     expect(result).toEqual(list);
   });
 
+  it("forwards merchant profile query params safely", async () => {
+    const list = { merchant_profiles: [fakeMerchantProfile().merchant_profile] };
+    const { transport, calls } = createMockTransport(
+      new Map([["GET /merchant_profiles.json", { data: list }]]),
+    );
+    await findTool("spreedly_merchant_profile_list").handler(
+      { since_token: "mp/next#1", order: "desc", count: "30" },
+      { transport },
+    );
+    expect(calls[0].path).toBe(
+      "/merchant_profiles.json?since_token=mp%2Fnext%231&order=desc&count=30",
+    );
+  });
+
   it("shows a merchant profile", async () => {
     const { transport } = createMockTransport(
       new Map([["GET /merchant_profiles/FakeMPToken_mp001.json", { data: fakeMerchantProfile() }]]),
