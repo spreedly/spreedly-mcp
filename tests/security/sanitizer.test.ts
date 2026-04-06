@@ -104,6 +104,13 @@ describe("sanitizeParams", () => {
     ).toThrow('Invalid identifier format in field "payment_method_token".');
   });
 
+  it("rejects token path traversal payloads before URL encoding", () => {
+    // Mirrors the explicit traversal-like token coverage in `tests/transport/path.test.ts`.
+    expect(() => sanitizeParams({ payment_method_token: "../../v1/receivers" })).toThrow(
+      'Invalid identifier format in field "payment_method_token".',
+    );
+  });
+
   it("rejects malformed key path segments", () => {
     expect(() => sanitizeParams({ environment_key: "../access_secrets" })).toThrow(
       'Invalid identifier format in field "environment_key".',

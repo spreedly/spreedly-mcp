@@ -18,6 +18,16 @@ describe("buildUrl", () => {
     ).toBe("/transactions/token%2Fwith%23unsafe%3Fchars/transcript");
   });
 
+  // This is defense in depth - in case of a bug in the sanitizer, we want to
+  // ensure that we don't allow path traversal.
+  it("encodes token path traversal sequences as literal path data", () => {
+    expect(
+      buildUrl("/receivers/:receiver_token.json", {
+        path: { receiver_token: "../../v1/receivers" },
+      }),
+    ).toBe("/receivers/..%2F..%2Fv1%2Freceivers.json");
+  });
+
   it("combines path and query helpers", () => {
     expect(
       buildUrl("/payment_methods/:payment_method_token/events.json", {
