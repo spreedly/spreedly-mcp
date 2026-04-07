@@ -22,14 +22,16 @@ describe("sanitizeString", () => {
     expect(sanitizeString("  hello  ")).toBe("hello");
   });
 
-  it("enforces token field length limits", () => {
+  it("enforces strict identifier field length limits", () => {
     const longToken = "a".repeat(100);
-    expect(sanitizeString(longToken, "gateway_token").length).toBe(64);
+    const longKey = "b".repeat(100);
+    expect(sanitizeString(longToken, "gateway_token")).toBe("a".repeat(64));
+    expect(sanitizeString(longKey, "environment_key")).toBe("b".repeat(64));
   });
 
   it("enforces default field length limits", () => {
     const longValue = "x".repeat(20_000);
-    expect(sanitizeString(longValue, "description").length).toBe(10_000);
+    expect(sanitizeString(longValue, "description")).toBe("x".repeat(10_000));
   });
 });
 
@@ -81,10 +83,54 @@ describe("sanitizeParams", () => {
     expect(result.active).toBe(true);
   });
 
+  it("allows valid strict identifiers", () => {
+    const result = sanitizeParams({
+      gateway_token: "FakeGWToken_abc123",
+      since_token: ["ABC-def_456"],
+    });
+    expect(result.gateway_token).toBe("FakeGWToken_abc123");
+    expect(result.since_token).toEqual(["ABC-def_456"]);
+  });
+
   it("throws on injection attempts", () => {
     expect(() => sanitizeParams({ name: "tool_call bad stuff" })).toThrow(
       'Invalid input detected in field "name".',
     );
+  });
+
+  it("rejects malformed token path segments", () => {
+    expect(() =>
+      sanitizeParams({ payment_method_token: "../../v1/environments/test.json#" }),
+    ).toThrow('Invalid identifier format in field "payment_method_token".');
+  });
+
+  it("rejects token path traversal payloads before URL encoding", () => {
+    // Mirrors the explicit traversal-like token coverage in `tests/transport/path.test.ts`.
+    expect(() => sanitizeParams({ payment_method_token: "../../v1/receivers" })).toThrow(
+      'Invalid identifier format in field "payment_method_token".',
+    );
+  });
+
+  it("rejects malformed key path segments", () => {
+    expect(() => sanitizeParams({ environment_key: "../access_secrets" })).toThrow(
+      'Invalid identifier format in field "environment_key".',
+    );
+  });
+
+  it("rejects malformed event identifiers", () => {
+    expect(() => sanitizeParams({ event_id: "evt_123/metadata" })).toThrow(
+      'Invalid identifier format in field "event_id".',
+    );
+  });
+
+  it("rejects malformed nested identifier fields", () => {
+    expect(() =>
+      sanitizeParams({
+        transaction: {
+          payment_method_token: "token/redact.json#",
+        },
+      }),
+    ).toThrow('Invalid identifier format in field "payment_method_token".');
   });
 
   it("sanitizes string values inside arrays", () => {
@@ -105,9 +151,31 @@ describe("sanitizeParams", () => {
     );
   });
 
+  it("rejects malformed identifiers inside arrays", () => {
+    expect(() => sanitizeParams({ since_token: ["valid_token", "../next_page"] })).toThrow(
+      'Invalid identifier format in array field "since_token".',
+    );
+  });
+
   it("passes through non-string non-object array values", () => {
     const result = sanitizeParams({ counts: [1, 2, 3] });
     expect(result.counts).toEqual([1, 2, 3]);
+  });
+
+  it("preserves an own __proto__ key without mutating the result prototype", () => {
+    const payload = Object.defineProperty({}, "__proto__", {
+      value: { polluted: "  yes\u200B  " },
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    }) as Record<string, unknown>;
+
+    const result = sanitizeParams(payload);
+
+    expect(Object.getPrototypeOf(result)).toBeNull();
+    expect(Object.prototype.hasOwnProperty.call(result, "__proto__")).toBe(true);
+    expect((result.__proto__ as Record<string, unknown>).polluted).toBe("yes");
+    expect((result as Record<string, unknown>).polluted).toBeUndefined();
   });
 });
 
@@ -257,5 +325,22 @@ describe("redactSensitiveValues", () => {
     expect(result.message).toContain("Gateway authentication failed using credentials");
     expect(result.message).toContain("[REDACTED]");
     expect(result.message).not.toContain("ABCDEFGHIJKLMNOPQRSTuvwxyz");
+  });
+
+  it("preserves an own __proto__ key without mutating the redacted result prototype", () => {
+    const payload = Object.defineProperty({}, "__proto__", {
+      value: { api_key: "FakeGatewayApiKeyValue1234567890" },
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+
+    const result = redactSensitiveValues(payload) as Record<string, unknown>;
+    const protoValue = result.__proto__ as Record<string, unknown>;
+
+    expect(Object.getPrototypeOf(result)).toBeNull();
+    expect(Object.prototype.hasOwnProperty.call(result, "__proto__")).toBe(true);
+    expect(protoValue.api_key).toBe("[REDACTED]");
+    expect((result as Record<string, unknown>).api_key).toBeUndefined();
   });
 });

@@ -47,11 +47,30 @@ describe("payment method tools", () => {
       const result = await findTool("spreedly_payment_method_list").handler({}, { transport });
       expect(result).toEqual(fakePaymentMethodList());
     });
+
+    it("forwards supported query filters safely", async () => {
+      const { transport, calls } = createMockTransport(
+        new Map([["GET /payment_methods.json", { data: fakePaymentMethodList() }]]),
+      );
+      await findTool("spreedly_payment_method_list").handler(
+        {
+          since_token: "pm_cursor/next#1",
+          order: "desc",
+          metadata: { customer_id: "abc/123" },
+          state: "redacted",
+          count: "25",
+        },
+        { transport },
+      );
+      expect(calls[0].path).toBe(
+        "/payment_methods.json?since_token=pm_cursor%2Fnext%231&order=desc&metadata%5Bcustomer_id%5D=abc%2F123&state=redacted&count=25",
+      );
+    });
   });
 
   describe("spreedly_payment_method_show", () => {
     it("shows a payment method", async () => {
-      const { transport } = createMockTransport(
+      const { transport, calls } = createMockTransport(
         new Map([["GET /payment_methods/FakePMToken_pm001.json", { data: fakePaymentMethod() }]]),
       );
       const result = await findTool("spreedly_payment_method_show").handler(
@@ -59,6 +78,7 @@ describe("payment method tools", () => {
         { transport },
       );
       expect(result).toEqual(fakePaymentMethod());
+      expect(calls[0].path).toBe("/payment_methods/FakePMToken_pm001.json");
     });
   });
 
@@ -106,6 +126,47 @@ describe("payment method tools", () => {
         { transport },
       );
       expect(result).toEqual(events);
+    });
+
+    it("forwards event query options safely", async () => {
+      const events = { events: [fakeEvent().event] };
+      const { transport, calls } = createMockTransport(
+        new Map([["GET /payment_methods/FakePMToken_pm001/events.json", { data: events }]]),
+      );
+      await findTool("spreedly_payment_method_list_events").handler(
+        {
+          payment_method_token: "FakePMToken_pm001",
+          since_token: "evt/123#frag",
+          count: "15",
+          include_transactions: true,
+        },
+        { transport },
+      );
+      expect(calls[0].path).toBe(
+        "/payment_methods/FakePMToken_pm001/events.json?since_token=evt%2F123%23frag&count=15&include_transactions=true",
+      );
+    });
+  });
+
+  describe("spreedly_payment_method_list_all_events", () => {
+    it("forwards global payment method event filters safely", async () => {
+      const events = { events: [fakeEvent().event] };
+      const { transport, calls } = createMockTransport(
+        new Map([["GET /payment_methods/events.json", { data: events }]]),
+      );
+      await findTool("spreedly_payment_method_list_all_events").handler(
+        {
+          since_token: "evt/after#cursor",
+          order: "asc",
+          event_type: "RetainPaymentMethod",
+          count: "10",
+          include_transactions: false,
+        },
+        { transport },
+      );
+      expect(calls[0].path).toBe(
+        "/payment_methods/events.json?since_token=evt%2Fafter%23cursor&order=asc&event_type=RetainPaymentMethod&count=10&include_transactions=false",
+      );
     });
   });
 

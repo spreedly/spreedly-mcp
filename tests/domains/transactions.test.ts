@@ -18,6 +18,24 @@ describe("transaction tools", () => {
       const result = await findTool("spreedly_transaction_list").handler({}, { transport });
       expect(result).toEqual(fakeTransactionList());
     });
+
+    it("encodes list query parameters safely", async () => {
+      const { transport, calls } = createMockTransport(
+        new Map([["GET /transactions.json", { data: fakeTransactionList() }]]),
+      );
+      await findTool("spreedly_transaction_list").handler(
+        {
+          since_token: "token/with?query#fragment",
+          order: "asc",
+          state: "succeeded",
+          count: "20",
+        },
+        { transport },
+      );
+      expect(calls[0].path).toBe(
+        "/transactions.json?since_token=token%2Fwith%3Fquery%23fragment&order=asc&state=succeeded&count=20",
+      );
+    });
   });
 
   describe("spreedly_transaction_show", () => {

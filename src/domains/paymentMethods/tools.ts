@@ -1,4 +1,5 @@
 import { TOOL_DESCRIPTIONS } from "../../security/descriptions.js";
+import { buildUrl } from "../../transport/path.js";
 import type { ToolDefinition } from "../../types/shared.js";
 import {
   CreatePaymentMethodSchema,
@@ -14,12 +15,6 @@ import {
   ShowPaymentMethodEventSchema,
   ListAllPaymentMethodEventsSchema,
 } from "./schemas.js";
-
-function buildQuery(params: Record<string, string | undefined>): string {
-  const entries = Object.entries(params).filter(([, v]) => v !== undefined);
-  if (entries.length === 0) return "";
-  return "?" + entries.map(([k, v]) => `${k}=${encodeURIComponent(v!)}`).join("&");
-}
 
 export const paymentMethodTools: ToolDefinition[] = [
   {
@@ -39,9 +34,19 @@ export const paymentMethodTools: ToolDefinition[] = [
     annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ListPaymentMethodsSchema.shape,
     handler: async (params, { transport }) => {
-      const { since_token, order } = params as { since_token?: string; order?: string };
-      const query = buildQuery({ since_token, order });
-      const res = await transport.request("GET", `/payment_methods.json${query}`);
+      const { since_token, order, metadata, state, count } = params as {
+        since_token?: string;
+        order?: string;
+        metadata?: Record<string, string>;
+        state?: string;
+        count?: string;
+      };
+      const res = await transport.request(
+        "GET",
+        buildUrl("/payment_methods.json", {
+          query: { since_token, order, metadata, state, count },
+        }),
+      );
       return res.data;
     },
   },
@@ -52,7 +57,10 @@ export const paymentMethodTools: ToolDefinition[] = [
     schema: ShowPaymentMethodSchema.shape,
     handler: async (params, { transport }) => {
       const { payment_method_token } = params as { payment_method_token: string };
-      const res = await transport.request("GET", `/payment_methods/${payment_method_token}.json`);
+      const res = await transport.request(
+        "GET",
+        buildUrl("/payment_methods/:payment_method_token.json", { path: { payment_method_token } }),
+      );
       return res.data;
     },
   },
@@ -67,9 +75,13 @@ export const paymentMethodTools: ToolDefinition[] = [
         payment_method_token: string;
         payment_method: Record<string, unknown>;
       };
-      const res = await transport.request("PUT", `/payment_methods/${payment_method_token}.json`, {
-        body: { payment_method },
-      });
+      const res = await transport.request(
+        "PUT",
+        buildUrl("/payment_methods/:payment_method_token.json", { path: { payment_method_token } }),
+        {
+          body: { payment_method },
+        },
+      );
       return res.data;
     },
   },
@@ -83,7 +95,9 @@ export const paymentMethodTools: ToolDefinition[] = [
       const { payment_method_token } = params as { payment_method_token: string };
       const res = await transport.request(
         "PUT",
-        `/payment_methods/${payment_method_token}/retain.json`,
+        buildUrl("/payment_methods/:payment_method_token/retain.json", {
+          path: { payment_method_token },
+        }),
       );
       return res.data;
     },
@@ -101,7 +115,9 @@ export const paymentMethodTools: ToolDefinition[] = [
       };
       const res = await transport.request(
         "POST",
-        `/payment_methods/${payment_method_token}/recache.json`,
+        buildUrl("/payment_methods/:payment_method_token/recache.json", {
+          path: { payment_method_token },
+        }),
         { body: { payment_method } },
       );
       return res.data;
@@ -118,10 +134,12 @@ export const paymentMethodTools: ToolDefinition[] = [
         since_token?: string;
         order?: string;
       };
-      const query = buildQuery({ since_token, order });
       const res = await transport.request(
         "GET",
-        `/payment_methods/${payment_method_token}/transactions.json${query}`,
+        buildUrl("/payment_methods/:payment_method_token/transactions.json", {
+          path: { payment_method_token },
+          query: { since_token, order },
+        }),
       );
       return res.data;
     },
@@ -132,14 +150,18 @@ export const paymentMethodTools: ToolDefinition[] = [
     annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ListPaymentMethodEventsSchema.shape,
     handler: async (params, { transport }) => {
-      const { payment_method_token, since_token } = params as {
+      const { payment_method_token, since_token, count, include_transactions } = params as {
         payment_method_token: string;
         since_token?: string;
+        count?: string;
+        include_transactions?: boolean;
       };
-      const query = buildQuery({ since_token });
       const res = await transport.request(
         "GET",
-        `/payment_methods/${payment_method_token}/events.json${query}`,
+        buildUrl("/payment_methods/:payment_method_token/events.json", {
+          path: { payment_method_token },
+          query: { since_token, count, include_transactions },
+        }),
       );
       return res.data;
     },
@@ -154,7 +176,9 @@ export const paymentMethodTools: ToolDefinition[] = [
       const { payment_method_token } = params as { payment_method_token: string };
       const res = await transport.request(
         "DELETE",
-        `/payment_methods/${payment_method_token}/metadata.json`,
+        buildUrl("/payment_methods/:payment_method_token/metadata.json", {
+          path: { payment_method_token },
+        }),
       );
       return res.data;
     },
@@ -172,7 +196,11 @@ export const paymentMethodTools: ToolDefinition[] = [
       };
       const res = await transport.request(
         "PUT",
-        `/payment_methods/${payment_method_token}/update_gratis.json`,
+        buildUrl("/payment_methods/:payment_method_token/update_gratis.json", {
+          path: {
+            payment_method_token,
+          },
+        }),
         { body: { payment_method } },
       );
       return res.data;
@@ -185,7 +213,10 @@ export const paymentMethodTools: ToolDefinition[] = [
     schema: ShowPaymentMethodEventSchema.shape,
     handler: async (params, { transport }) => {
       const { event_token } = params as { event_token: string };
-      const res = await transport.request("GET", `/payment_methods/events/${event_token}.json`);
+      const res = await transport.request(
+        "GET",
+        buildUrl("/payment_methods/events/:event_token.json", { path: { event_token } }),
+      );
       return res.data;
     },
   },
@@ -195,9 +226,19 @@ export const paymentMethodTools: ToolDefinition[] = [
     annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ListAllPaymentMethodEventsSchema.shape,
     handler: async (params, { transport }) => {
-      const { since_token } = params as { since_token?: string };
-      const query = buildQuery({ since_token });
-      const res = await transport.request("GET", `/payment_methods/events.json${query}`);
+      const { since_token, order, event_type, count, include_transactions } = params as {
+        since_token?: string;
+        order?: string;
+        event_type?: string;
+        count?: string;
+        include_transactions?: boolean;
+      };
+      const res = await transport.request(
+        "GET",
+        buildUrl("/payment_methods/events.json", {
+          query: { since_token, order, event_type, count, include_transactions },
+        }),
+      );
       return res.data;
     },
   },

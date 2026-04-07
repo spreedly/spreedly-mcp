@@ -35,6 +35,18 @@ describe("certificate tools", () => {
     expect(result).toEqual(list);
   });
 
+  it("forwards certificate list query params safely", async () => {
+    const list = { certificates: [fakeCertificate().certificate] };
+    const { transport, calls } = createMockTransport(
+      new Map([["GET /certificates.json", { data: list }]]),
+    );
+    await findTool("spreedly_certificate_list").handler(
+      { since_token: "cert/next#1", order: "desc" },
+      { transport },
+    );
+    expect(calls[0].path).toBe("/certificates.json?since_token=cert%2Fnext%231&order=desc");
+  });
+
   it("updates a certificate", async () => {
     const { transport, calls } = createMockTransport(
       new Map([["PUT /certificates/FakeCertToken_cert001.json", { data: fakeCertificate() }]]),

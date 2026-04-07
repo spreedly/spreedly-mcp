@@ -1,4 +1,5 @@
 import { TOOL_DESCRIPTIONS } from "../../security/descriptions.js";
+import { buildUrl } from "../../transport/path.js";
 import type { ToolDefinition } from "../../types/shared.js";
 import {
   CreateCertificateSchema,
@@ -6,12 +7,6 @@ import {
   ListCertificatesSchema,
   UpdateCertificateSchema,
 } from "./schemas.js";
-
-function buildQuery(params: Record<string, string | undefined>): string {
-  const entries = Object.entries(params).filter(([, v]) => v !== undefined);
-  if (entries.length === 0) return "";
-  return "?" + entries.map(([k, v]) => `${k}=${encodeURIComponent(v!)}`).join("&");
-}
 
 export const certificateTools: ToolDefinition[] = [
   {
@@ -40,9 +35,11 @@ export const certificateTools: ToolDefinition[] = [
     annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ListCertificatesSchema.shape,
     handler: async (params, { transport }) => {
-      const { since_token } = params as { since_token?: string };
-      const query = buildQuery({ since_token });
-      const res = await transport.request("GET", `/certificates.json${query}`);
+      const { since_token, order } = params as { since_token?: string; order?: string };
+      const res = await transport.request(
+        "GET",
+        buildUrl("/certificates.json", { query: { since_token, order } }),
+      );
       return res.data;
     },
   },
@@ -56,9 +53,13 @@ export const certificateTools: ToolDefinition[] = [
         certificate_token: string;
         certificate: Record<string, unknown>;
       };
-      const res = await transport.request("PUT", `/certificates/${certificate_token}.json`, {
-        body: { certificate },
-      });
+      const res = await transport.request(
+        "PUT",
+        buildUrl("/certificates/:certificate_token.json", { path: { certificate_token } }),
+        {
+          body: { certificate },
+        },
+      );
       return res.data;
     },
   },

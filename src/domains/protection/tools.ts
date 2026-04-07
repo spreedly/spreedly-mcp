@@ -1,4 +1,5 @@
 import { TOOL_DESCRIPTIONS } from "../../security/descriptions.js";
+import { buildUrl } from "../../transport/path.js";
 import type { ToolDefinition } from "../../types/shared.js";
 import {
   ForwardClaimSchema,
@@ -7,12 +8,6 @@ import {
   CreateProtectionProviderSchema,
   ShowProtectionProviderSchema,
 } from "./schemas.js";
-
-function buildQuery(params: Record<string, string | undefined>): string {
-  const entries = Object.entries(params).filter(([, v]) => v !== undefined);
-  if (entries.length === 0) return "";
-  return "?" + entries.map(([k, v]) => `${k}=${encodeURIComponent(v!)}`).join("&");
-}
 
 export const protectionTools: ToolDefinition[] = [
   {
@@ -26,9 +21,13 @@ export const protectionTools: ToolDefinition[] = [
         transaction_token: string;
         claim: Record<string, unknown>;
       };
-      const res = await transport.request("POST", `/protection/${transaction_token}/claims.json`, {
-        body: { claim },
-      });
+      const res = await transport.request(
+        "POST",
+        buildUrl("/protection/:transaction_token/claims.json", { path: { transaction_token } }),
+        {
+          body: { claim },
+        },
+      );
       return res.data;
     },
   },
@@ -38,9 +37,16 @@ export const protectionTools: ToolDefinition[] = [
     annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ListProtectionEventsSchema.shape,
     handler: async (params, { transport }) => {
-      const { since_token } = params as { since_token?: string };
-      const query = buildQuery({ since_token });
-      const res = await transport.request("GET", `/protection/events.json${query}`);
+      const { since_token, order, count, state } = params as {
+        since_token?: string;
+        order?: string;
+        count?: string;
+        state?: string;
+      };
+      const res = await transport.request(
+        "GET",
+        buildUrl("/protection/events.json", { query: { since_token, order, count, state } }),
+      );
       return res.data;
     },
   },
@@ -51,7 +57,10 @@ export const protectionTools: ToolDefinition[] = [
     schema: ShowProtectionEventSchema.shape,
     handler: async (params, { transport }) => {
       const { event_token } = params as { event_token: string };
-      const res = await transport.request("GET", `/protection/events/${event_token}.json`);
+      const res = await transport.request(
+        "GET",
+        buildUrl("/protection/events/:event_token.json", { path: { event_token } }),
+      );
       return res.data;
     },
   },
@@ -74,7 +83,9 @@ export const protectionTools: ToolDefinition[] = [
       const { protection_provider_token } = params as { protection_provider_token: string };
       const res = await transport.request(
         "GET",
-        `/protection/providers/${protection_provider_token}.json`,
+        buildUrl("/protection/providers/:protection_provider_token.json", {
+          path: { protection_provider_token },
+        }),
       );
       return res.data;
     },

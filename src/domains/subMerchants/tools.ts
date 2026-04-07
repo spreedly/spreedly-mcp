@@ -1,4 +1,5 @@
 import { TOOL_DESCRIPTIONS } from "../../security/descriptions.js";
+import { buildUrl } from "../../transport/path.js";
 import type { ToolDefinition } from "../../types/shared.js";
 import {
   CreateSubMerchantSchema,
@@ -6,12 +7,6 @@ import {
   ShowSubMerchantSchema,
   UpdateSubMerchantSchema,
 } from "./schemas.js";
-
-function buildQuery(params: Record<string, string | undefined>): string {
-  const entries = Object.entries(params).filter(([, v]) => v !== undefined);
-  if (entries.length === 0) return "";
-  return "?" + entries.map(([k, v]) => `${k}=${encodeURIComponent(v!)}`).join("&");
-}
 
 export const subMerchantTools: ToolDefinition[] = [
   {
@@ -30,9 +25,15 @@ export const subMerchantTools: ToolDefinition[] = [
     annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ListSubMerchantsSchema.shape,
     handler: async (params, { transport }) => {
-      const { since_token } = params as { since_token?: string };
-      const query = buildQuery({ since_token });
-      const res = await transport.request("GET", `/sub_merchants.json${query}`);
+      const { since_token, order, count } = params as {
+        since_token?: string;
+        order?: string;
+        count?: string;
+      };
+      const res = await transport.request(
+        "GET",
+        buildUrl("/sub_merchants.json", { query: { since_token, order, count } }),
+      );
       return res.data;
     },
   },
@@ -43,7 +44,10 @@ export const subMerchantTools: ToolDefinition[] = [
     schema: ShowSubMerchantSchema.shape,
     handler: async (params, { transport }) => {
       const { sub_merchant_key } = params as { sub_merchant_key: string };
-      const res = await transport.request("GET", `/sub_merchants/${sub_merchant_key}.json`);
+      const res = await transport.request(
+        "GET",
+        buildUrl("/sub_merchants/:sub_merchant_key.json", { path: { sub_merchant_key } }),
+      );
       return res.data;
     },
   },
@@ -57,9 +61,13 @@ export const subMerchantTools: ToolDefinition[] = [
         sub_merchant_key: string;
         sub_merchant: Record<string, unknown>;
       };
-      const res = await transport.request("PUT", `/sub_merchants/${sub_merchant_key}.json`, {
-        body: { sub_merchant },
-      });
+      const res = await transport.request(
+        "PUT",
+        buildUrl("/sub_merchants/:sub_merchant_key.json", { path: { sub_merchant_key } }),
+        {
+          body: { sub_merchant },
+        },
+      );
       return res.data;
     },
   },

@@ -1,4 +1,5 @@
 import { TOOL_DESCRIPTIONS } from "../../security/descriptions.js";
+import { buildUrl } from "../../transport/path.js";
 import type { ToolDefinition } from "../../types/shared.js";
 import {
   CreateMerchantProfileSchema,
@@ -6,12 +7,6 @@ import {
   ShowMerchantProfileSchema,
   UpdateMerchantProfileSchema,
 } from "./schemas.js";
-
-function buildQuery(params: Record<string, string | undefined>): string {
-  const entries = Object.entries(params).filter(([, v]) => v !== undefined);
-  if (entries.length === 0) return "";
-  return "?" + entries.map(([k, v]) => `${k}=${encodeURIComponent(v!)}`).join("&");
-}
 
 export const merchantProfileTools: ToolDefinition[] = [
   {
@@ -30,9 +25,15 @@ export const merchantProfileTools: ToolDefinition[] = [
     annotations: { readOnlyHint: true, openWorldHint: false },
     schema: ListMerchantProfilesSchema.shape,
     handler: async (params, { transport }) => {
-      const { since_token } = params as { since_token?: string };
-      const query = buildQuery({ since_token });
-      const res = await transport.request("GET", `/merchant_profiles.json${query}`);
+      const { since_token, order, count } = params as {
+        since_token?: string;
+        order?: string;
+        count?: string;
+      };
+      const res = await transport.request(
+        "GET",
+        buildUrl("/merchant_profiles.json", { query: { since_token, order, count } }),
+      );
       return res.data;
     },
   },
@@ -45,7 +46,9 @@ export const merchantProfileTools: ToolDefinition[] = [
       const { merchant_profile_token } = params as { merchant_profile_token: string };
       const res = await transport.request(
         "GET",
-        `/merchant_profiles/${merchant_profile_token}.json`,
+        buildUrl("/merchant_profiles/:merchant_profile_token.json", {
+          path: { merchant_profile_token },
+        }),
       );
       return res.data;
     },
@@ -62,7 +65,9 @@ export const merchantProfileTools: ToolDefinition[] = [
       };
       const res = await transport.request(
         "PUT",
-        `/merchant_profiles/${merchant_profile_token}.json`,
+        buildUrl("/merchant_profiles/:merchant_profile_token.json", {
+          path: { merchant_profile_token },
+        }),
         { body: { merchant_profile } },
       );
       return res.data;

@@ -34,6 +34,20 @@ describe("protection tools", () => {
     expect(result).toEqual(events);
   });
 
+  it("forwards protection event filters safely", async () => {
+    const events = { events: [{ token: "ev1", event_type: "protection.check" }] };
+    const { transport, calls } = createMockTransport(
+      new Map([["GET /protection/events.json", { data: events }]]),
+    );
+    await findTool("spreedly_protection_list_events").handler(
+      { since_token: "prot/next#1", order: "asc", count: "5", state: "succeeded" },
+      { transport },
+    );
+    expect(calls[0].path).toBe(
+      "/protection/events.json?since_token=prot%2Fnext%231&order=asc&count=5&state=succeeded",
+    );
+  });
+
   it("shows a protection event", async () => {
     const event = { event: { token: "ev1", event_type: "protection.check" } };
     const { transport } = createMockTransport(

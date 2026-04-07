@@ -30,6 +30,18 @@ describe("sub-merchant tools", () => {
     expect(result).toEqual(list);
   });
 
+  it("forwards sub-merchant query params safely", async () => {
+    const list = { sub_merchants: [fakeSubMerchant().sub_merchant] };
+    const { transport, calls } = createMockTransport(
+      new Map([["GET /sub_merchants.json", { data: list }]]),
+    );
+    await findTool("spreedly_sub_merchant_list").handler(
+      { since_token: "sm/next#1", order: "desc", count: "12" },
+      { transport },
+    );
+    expect(calls[0].path).toBe("/sub_merchants.json?since_token=sm%2Fnext%231&order=desc&count=12");
+  });
+
   it("shows a sub-merchant", async () => {
     const { transport } = createMockTransport(
       new Map([["GET /sub_merchants/FakeSMKey_sm001.json", { data: fakeSubMerchant() }]]),
