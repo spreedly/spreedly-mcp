@@ -75,11 +75,11 @@ For details, see [Spreedly Credentials Documentation](https://docs.spreedly.com/
 
 The server controls which tools are available through three environment variable flags. **All default to `false`** -- only read-only tools are available out of the box. Enable the categories you need:
 
-| Variable                              | Default | What it enables                                                                                         |
-| ------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------- |
-| `PAYMENT_METHOD_TOKENIZATION_ENABLED` | `false` | Dedicated payment method tokenization tools that send raw PAN/CVV to Spreedly (`create`, `recache`)     |
+| Variable                              | Default | What it enables                                                                                                                                                                                                               |
+| ------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PAYMENT_METHOD_TOKENIZATION_ENABLED` | `false` | Dedicated payment method tokenization tools that send raw PAN/CVV to Spreedly (`create`, `recache`)                                                                                                                           |
 | `TRANSACTION_INITIATION_ENABLED`      | `false` | Authorizing, purchasing, capturing, voiding, refunding, and other third-party actions. See [Cardholder Data Flow](#cardholder-data-flow) -- `authorize`, `purchase`, and `confirm` also accept optional pass-in PAN/CVV data. |
-| `ADMINISTRATIVE_ENABLED`              | `false` | Creating/updating gateways, environments, certificates, merchant profiles, SCA providers, sub-merchants |
+| `ADMINISTRATIVE_ENABLED`              | `false` | Creating/updating gateways, environments, certificates, merchant profiles, SCA providers, sub-merchants                                                                                                                       |
 
 ### Recommended Configuration Profiles
 
@@ -136,10 +136,10 @@ All tool categories enabled. Use only in controlled environments or during initi
 
 Five tools can accept raw cardholder data (PAN, CVV). They are controlled by two different flags:
 
-| Flag                                  | Tools                                                                                   | CHD Fields                                           |
-| ------------------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `PAYMENT_METHOD_TOKENIZATION_ENABLED` | `spreedly_payment_method_create`, `spreedly_payment_method_recache`                     | `credit_card` (full PAN, CVV), `bank_account`, `apple_pay`, `google_pay` |
-| `TRANSACTION_INITIATION_ENABLED`      | `spreedly_gateway_authorize`, `spreedly_gateway_purchase`, `spreedly_transaction_confirm` | `credit_card` (optional pass-in PAN/CVV)             |
+| Flag                                  | Tools                                                                                     | CHD Fields                                                               |
+| ------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `PAYMENT_METHOD_TOKENIZATION_ENABLED` | `spreedly_payment_method_create`, `spreedly_payment_method_recache`                       | `credit_card` (full PAN, CVV), `bank_account`, `apple_pay`, `google_pay` |
+| `TRANSACTION_INITIATION_ENABLED`      | `spreedly_gateway_authorize`, `spreedly_gateway_purchase`, `spreedly_transaction_confirm` | `credit_card` (optional pass-in PAN/CVV)                                 |
 
 The `create` and `recache` tools are **dedicated tokenization tools** -- their sole purpose is to vault raw card data in Spreedly. They are gated by `PAYMENT_METHOD_TOKENIZATION_ENABLED`.
 
