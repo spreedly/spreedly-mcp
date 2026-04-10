@@ -71,8 +71,8 @@ The server uses three environment variable flags to control which tool categorie
 
 | Variable | Default | Controls |
 | ------------------------------------- | ------- | ---------------------------------------------------------------------------------------------- |
-| \`PAYMENT_METHOD_TOKENIZATION_ENABLED\` | \`false\` | Tools that send sensitive card data (PAN/CVV) to Spreedly |
-| \`TRANSACTION_INITIATION_ENABLED\` | \`false\` | Tools that initiate action on a payment method with a third party |
+| \`PAYMENT_METHOD_TOKENIZATION_ENABLED\` | \`false\` | Dedicated tokenization tools that send raw PAN/CVV to Spreedly for vaulting (\`payment_method_create\`, \`payment_method_recache\`) |
+| \`TRANSACTION_INITIATION_ENABLED\` | \`false\` | Tools that initiate action on a payment method with a third party. \`gateway_authorize\`, \`gateway_purchase\`, and \`transaction_confirm\` also accept optional pass-in PAN/CVV data when the Spreedly environment permits it. |
 | \`ADMINISTRATIVE_ENABLED\` | \`false\` | Tools that create or modify configuration objects (gateways, environments, certificates, etc.) |
 
 Read-only tools (list, show, transcript) are always available regardless of flag settings.

@@ -77,8 +77,8 @@ The server controls which tools are available through three environment variable
 
 | Variable                              | Default | What it enables                                                                                         |
 | ------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------- |
-| `PAYMENT_METHOD_TOKENIZATION_ENABLED` | `false` | Creating and recaching payment methods (sends PAN/CVV data)                                             |
-| `TRANSACTION_INITIATION_ENABLED`      | `false` | Authorizing, purchasing, capturing, voiding, refunding, and other third-party actions                   |
+| `PAYMENT_METHOD_TOKENIZATION_ENABLED` | `false` | Dedicated payment method tokenization tools that send raw PAN/CVV to Spreedly (`create`, `recache`)     |
+| `TRANSACTION_INITIATION_ENABLED`      | `false` | Authorizing, purchasing, capturing, voiding, refunding, and other third-party actions. See [Cardholder Data Flow](#cardholder-data-flow) -- `authorize`, `purchase`, and `confirm` also accept optional pass-in PAN/CVV data. |
 | `ADMINISTRATIVE_ENABLED`              | `false` | Creating/updating gateways, environments, certificates, merchant profiles, SCA providers, sub-merchants |
 
 ### Recommended Configuration Profiles
@@ -104,7 +104,7 @@ Only list/show tools are available. Good for dashboards, reporting, and investig
 }
 ```
 
-Enables authorizing, capturing, voiding, and refunding against existing gateways. Does not allow creating gateways or tokenizing raw card data -- the safest profile for conducting transactions.
+Enables authorizing, capturing, voiding, and refunding against existing gateways. Does not allow creating gateways or using dedicated card tokenization tools. Note: `authorize`, `purchase`, and `confirm` accept optional [pass-in PAN/CVV data](https://developer.spreedly.com/reference/authorize-1) if the merchant's Spreedly environment permits it -- see [Cardholder Data Flow](#cardholder-data-flow).
 
 **Administrative setup:**
 
@@ -131,6 +131,21 @@ For initial environment setup -- creating gateways, merchant profiles, SCA provi
 ```
 
 All tool categories enabled. Use only in controlled environments or during initial setup.
+
+### Cardholder Data Flow
+
+Five tools can accept raw cardholder data (PAN, CVV). They are controlled by two different flags:
+
+| Flag                                  | Tools                                                                                   | CHD Fields                                           |
+| ------------------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `PAYMENT_METHOD_TOKENIZATION_ENABLED` | `spreedly_payment_method_create`, `spreedly_payment_method_recache`                     | `credit_card` (full PAN, CVV), `bank_account`, `apple_pay`, `google_pay` |
+| `TRANSACTION_INITIATION_ENABLED`      | `spreedly_gateway_authorize`, `spreedly_gateway_purchase`, `spreedly_transaction_confirm` | `credit_card` (optional pass-in PAN/CVV)             |
+
+The `create` and `recache` tools are **dedicated tokenization tools** -- their sole purpose is to vault raw card data in Spreedly. They are gated by `PAYMENT_METHOD_TOKENIZATION_ENABLED`.
+
+The `authorize`, `purchase`, and `confirm` tools primarily operate on existing `payment_method_token` references. They also accept an optional `credit_card` field for [pass-in payment method tokenization](https://developer.spreedly.com/reference/authorize-1), which tokenizes a new card inline as part of the transaction. Whether pass-in succeeds depends on the merchant's Spreedly environment settings, not the MCP server flag. These tools are gated by `TRANSACTION_INITIATION_ENABLED`.
+
+**PCI scoping note:** Disabling only `PAYMENT_METHOD_TOKENIZATION_ENABLED` still allows pass-in PAN/CVV data through transaction tools when `TRANSACTION_INITIATION_ENABLED` is `true`. To exclude all raw cardholder data flows, either disable both flags, or enable the ["iFrame or Spreedly Express only"](https://developer.spreedly.com/docs/securing-iframe) setting in your Spreedly environment -- this prevents direct API submission of payment methods, blocking pass-in tokenization on transaction endpoints regardless of MCP flag configuration.
 
 ## Available Tools
 
