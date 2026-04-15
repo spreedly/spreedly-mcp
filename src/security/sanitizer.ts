@@ -1,7 +1,7 @@
-/* eslint-disable no-misleading-character-class -- intentionally matching individual invisible/control characters */
+/* eslint-disable no-control-regex -- intentionally matching control and invisible characters for security sanitization */
 const INVISIBLE_CHARS =
-  /[\u200B\u200C\u200D\u200E\u200F\uFEFF\u2028\u2029\u202A-\u202E\u2060-\u2064\u2066-\u2069\u00AD]/g;
-/* eslint-enable no-misleading-character-class */
+  /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u00AD\u200B-\u200F\u2028\u2029\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/g;
+/* eslint-enable no-control-regex */
 
 const MCP_PROTOCOL_FRAGMENTS = [
   "tool_call",
@@ -50,7 +50,8 @@ function isStrictIdentifierField(fieldName?: string): boolean {
 }
 
 export function sanitizeString(value: string, fieldName?: string): string {
-  let cleaned = value.replace(INVISIBLE_CHARS, "");
+  let cleaned = value.normalize("NFKC");
+  cleaned = cleaned.replace(INVISIBLE_CHARS, "");
   cleaned = cleaned.trim();
 
   const maxLen = isStrictIdentifierField(fieldName)
@@ -96,6 +97,11 @@ export function sanitizeParams(params: Record<string, unknown>): Record<string, 
   const result = createSafeRecord();
 
   for (const [key, value] of Object.entries(params)) {
+    const sanitizedKey = sanitizeString(key);
+    if (containsInjectionAttempt(sanitizedKey)) {
+      throw new Error(`Invalid input detected in key "${key}".`);
+    }
+
     if (typeof value === "string") {
       const sanitized = sanitizeString(value, key);
       if (containsInjectionAttempt(sanitized)) {

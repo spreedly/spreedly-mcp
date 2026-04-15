@@ -112,9 +112,11 @@ Organization-scoped secrets can authenticate against any environment. Use enviro
 
 The server defaults to read-only mode. Only enable the tool categories you need:
 
-- `TRANSACTION_INITIATION_ENABLED` -- for processing payments
-- `PAYMENT_METHOD_TOKENIZATION_ENABLED` -- for tokenizing card data
+- `TRANSACTION_INITIATION_ENABLED` -- for processing payments. Note: `authorize`, `purchase`, and `confirm` also accept optional pass-in PAN/CVV data if the merchant's Spreedly environment permits it.
+- `PAYMENT_METHOD_TOKENIZATION_ENABLED` -- for dedicated card tokenization tools (`create`, `recache`) that send raw PAN/CVV to Spreedly for vaulting
 - `ADMINISTRATIVE_ENABLED` -- for creating gateways and environments (disable after setup)
+
+See the [Cardholder Data Flow](../README.md#cardholder-data-flow) section in the README for the full breakdown of which tools accept raw cardholder data and how to restrict it.
 
 See [Tool Access Policy](../README.md#tool-access-policy) for configuration details.
 
