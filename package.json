@@ -20,6 +20,7 @@
     "dist",
     "README.md",
     "LICENSE",
+    "NOTICE",
     "CHANGELOG.md",
     "DISCLAIMER.md"
   ],
@@ -46,7 +47,7 @@
     "ai",
     "llm"
   ],
-  "license": "MIT",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/spreedly/spreedly-mcp.git"
