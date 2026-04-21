@@ -2,6 +2,9 @@ node_modules/
 dist/
 coverage/
 
+# npm pack output
+*.tgz
+
 .env
 .env.*
 !.env.example
