@@ -258,8 +258,8 @@ When audit logging is enabled (the default), the MCP server emits structured aud
 ### Example Output
 
 ```json
-{"timestamp":"2026-03-05T18:30:00.000Z","eventId":"f47ac10b-58cc-4372-a567-0e02b2c3d479","component":"spreedly-mcp","tool":"spreedly_gateway_list","environmentKey":"Abc123XyzLongKey","status":"success","durationMs":142,"requestId":"a1b2c3d4e5","httpStatusCode":200}
-{"timestamp":"2026-03-05T18:30:01.000Z","eventId":"7c9e6679-7425-40de-944b-e07fc1f90ae7","component":"spreedly-mcp","tool":"spreedly_payment_method_create","environmentKey":"Abc123XyzLongKey","status":"error","durationMs":89,"requestId":"f6g7h8i9j0","httpStatusCode":422}
+{"timestamp":"2026-03-05T18:30:00.000Z","eventId":"f47ac10b-58cc-4372-a567-0e02b2c3d479","component":"spreedly-mcp","tool":"spreedly_gateway_list","environmentKey":"EXAMPLE_ENVIRONMENT_KEY","status":"success","durationMs":142,"requestId":"a1b2c3d4e5","httpStatusCode":200}
+{"timestamp":"2026-03-05T18:30:01.000Z","eventId":"7c9e6679-7425-40de-944b-e07fc1f90ae7","component":"spreedly-mcp","tool":"spreedly_payment_method_create","environmentKey":"EXAMPLE_ENVIRONMENT_KEY","status":"error","durationMs":89,"requestId":"f6g7h8i9j0","httpStatusCode":422}
 ```
 
 Each entry includes: timestamp, event ID, component identifier, tool name, environment key, success/failure status, duration, and HTTP metadata. The `environmentKey` is the full `SPREEDLY_ENVIRONMENT_KEY` (safe to log — it is not a secret). The `requestId` and `httpStatusCode` fields reflect the Spreedly API response (`x-request-id` header and HTTP status), enabling correlation with Spreedly's server-side logs. Both are present whenever a Spreedly API call was made. On error, `httpStatusCode` is `null` when the failure occurred before any HTTP request (e.g. input validation). On success without an API call, `httpStatusCode` is absent. Request and response bodies are **never** logged.

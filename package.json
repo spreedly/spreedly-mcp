@@ -1,6 +1,6 @@
 {
   "name": "@spreedly/spreedly-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Spreedly MCP server -- interact with the Spreedly payments API through the Model Context Protocol",
   "type": "module",
   "bin": {
@@ -54,7 +54,7 @@
   },
   "homepage": "https://github.com/spreedly/spreedly-mcp#readme",
   "bugs": {
-    "url": "https://github.com/spreedly/spreedly-mcp/issues"
+    "url": "https://spreedly.com/support/"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
