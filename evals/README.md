@@ -49,7 +49,7 @@ These can also be set via CLI flags (`--concurrency` / `-c` and `--pause` / `-p`
 ## Running evals
 
 ```bash
-# Run all scenarios (defaults to gpt-5-nano)
+# Run all scenarios (defaults to gpt-5.6-luna)
 npm run test:evals
 
 # Run a specific scenario group
@@ -125,7 +125,9 @@ Then add it to the appropriate array in the scenario file, and re-export from `e
 
 ## Using a different LLM provider
 
-By default, evals use OpenAI (`https://api.openai.com/v1`). To use any OpenAI-compatible provider (e.g. Ollama, Azure OpenAI), override the base URL:
+By default, evals call OpenAI at `https://api.openai.com/v1` through the **Responses API** so GPT-5.6 models can use function tools with reasoning (`EVAL_REASONING_EFFORT`, default `medium`). Requests use `store: false` and only local function tools.
+
+To use a Chat Completions-compatible host (Ollama, some Azure gateways), set `OPENAI_BASE_URL` to a hostname other than `api.openai.com`:
 
 ```bash
 OPENAI_BASE_URL=http://localhost:11434/v1 OPENAI_API_KEY=ollama npm run test:evals -- --model qwen2.5:32b
