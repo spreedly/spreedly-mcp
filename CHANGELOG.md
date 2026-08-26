@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-08-26
+
+### Security
+
+- Cleared 37 Dependabot alerts by moving transitive lockfile versions onto patched releases (including `hono`, `fast-uri`, `vite`, and `esbuild`). Added an `overrides` entry so `tsup` can use patched `esbuild`. `npm audit` reports 0 vulnerabilities.
+
 ## [0.1.1] - 2026-04-22
 
 ### Changed
