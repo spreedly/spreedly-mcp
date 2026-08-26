@@ -94,7 +94,7 @@ Three test layers, each with a distinct role:
 
 ### Eval Architecture
 
-- `evals/lib/providers.ts` -- OpenAI Responses API on `api.openai.com` (`store: false`, function tools only); Chat Completions when `OPENAI_BASE_URL` points elsewhere
+- `evals/lib/providers.ts` -- Responses API by default (`EVAL_API` / `--api`); Chat Completions when opted in. `store: false` always; encrypted reasoning + effort only on `api.openai.com`
 - `evals/lib/types.ts` -- `Scenario` interface (`systemPrompt` is optional; `SERVER_INSTRUCTIONS` always comes from the server)
 - `evals/lib/runner.ts` -- creates an MCP harness per scenario, gets tools via `client.listTools()`, routes calls via `client.callTool()`
 - `evals/lib/graders.ts` -- assertion functions (`toolCalled`, `toolCalledWith`, `maxCalls`, `pausedForInput`, etc.)

@@ -23,13 +23,23 @@ const REASONING_EFFORTS: readonly ReasoningEffort[] = [
 
 export type EvalApi = "responses" | "chat.completions";
 
-export function resolveEvalApi(
+export const DEFAULT_EVAL_API: EvalApi = "responses";
+
+export function resolveEvalApi(raw: string | undefined = process.env.EVAL_API): EvalApi {
+  const value = raw === undefined || raw === "" ? DEFAULT_EVAL_API : raw;
+  if (value === "responses" || value === "chat.completions") {
+    return value;
+  }
+  throw new Error(`Invalid EVAL_API "${value}". Use "responses" or "chat.completions".`);
+}
+
+export function isOpenAIApiHost(
   baseURL: string = process.env.OPENAI_BASE_URL || DEFAULT_BASE_URL,
-): EvalApi {
+): boolean {
   try {
-    return new URL(baseURL).hostname === "api.openai.com" ? "responses" : "chat.completions";
+    return new URL(baseURL).hostname === "api.openai.com";
   } catch {
-    return "chat.completions";
+    return false;
   }
 }
 
@@ -56,7 +66,7 @@ function isReasoningEffort(value: string): value is ReasoningEffort {
   return false;
 }
 
-export function createProvider(model?: string): LLMProvider {
+export function createProvider(model?: string, options?: { api?: EvalApi }): LLMProvider {
   const baseURL = process.env.OPENAI_BASE_URL || DEFAULT_BASE_URL;
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -64,19 +74,41 @@ export function createProvider(model?: string): LLMProvider {
   }
   const modelName = model || DEFAULT_MODEL;
   const client = new OpenAI({ baseURL, apiKey });
-  const api = resolveEvalApi(baseURL);
+  const api = options?.api ?? resolveEvalApi();
 
-  if (api === "responses") {
-    const effort = resolveReasoningEffort();
-    return responsesProvider(client, modelName, effort);
+  switch (api) {
+    case "responses":
+      return responsesProvider(client, modelName, {
+        effort: resolveReasoningEffort(),
+        openaiHost: isOpenAIApiHost(baseURL),
+      });
+    case "chat.completions":
+      return chatCompletionsProvider(client, modelName);
+    default: {
+      const _exhaustive: never = api;
+      throw new Error(`Unhandled eval API: ${String(_exhaustive)}`);
+    }
   }
-  return chatCompletionsProvider(client, modelName);
+}
+
+export function responsesCreateExtras(
+  openaiHost: boolean,
+  effort: ReasoningEffort,
+): Pick<OpenAI.Responses.ResponseCreateParamsNonStreaming, "store" | "include" | "reasoning"> {
+  if (!openaiHost) {
+    return { store: false };
+  }
+  return {
+    store: false,
+    include: ["reasoning.encrypted_content"],
+    reasoning: { effort },
+  };
 }
 
 function responsesProvider(
   client: OpenAI,
   modelName: string,
-  effort: ReasoningEffort,
+  options: { effort: ReasoningEffort; openaiHost: boolean },
 ): LLMProvider {
   return {
     async chat(messages: LLMMessage[], tools: LLMToolDef[]): Promise<LLMMessage> {
@@ -84,9 +116,7 @@ function responsesProvider(
         model: modelName,
         input: messagesToResponseInput(messages),
         tools: tools.length > 0 ? tools.map(toResponseTool) : undefined,
-        store: false,
-        include: ["reasoning.encrypted_content"],
-        reasoning: { effort },
+        ...responsesCreateExtras(options.openaiHost, options.effort),
       });
       return outputItemsToAssistantMessage(response.output);
     },

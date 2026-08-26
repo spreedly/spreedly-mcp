@@ -4,6 +4,7 @@ import { scenarioGroups } from "./scenarios/index.js";
 import {
   createProvider,
   DEFAULT_MODEL,
+  isOpenAIApiHost,
   resolveEvalApi,
   resolveReasoningEffort,
   withThrottle,
@@ -19,6 +20,7 @@ const { values } = parseArgs({
     model: { type: "string", short: "m" },
     concurrency: { type: "string", short: "c" },
     pause: { type: "string", short: "p" },
+    api: { type: "string" },
     help: { type: "boolean", short: "h" },
   },
   strict: true,
@@ -31,6 +33,7 @@ Usage: npm run test:evals [-- options]
 Options:
   -s, --scenario <name>   Run a specific scenario group (token-reuse, policy-enforcement, wasteful-patterns)
   -m, --model <model>     Model name (default: gpt-5.6-luna)
+  --api <api>             responses (default) or chat.completions
   -c, --concurrency <n>   Max scenarios to run in parallel (default: 5)
   -p, --pause <ms>        Minimum ms between LLM API calls (default: 0, no throttle)
   -h, --help              Show this help message
@@ -39,14 +42,15 @@ Examples:
   npm run test:evals                              # Run all evals with default model
   npm run test:evals -- --scenario token-reuse    # Run only token-reuse scenarios
   npm run test:evals -- --model gpt-4o            # Use a different model
+  npm run test:evals -- --api chat.completions    # Force Chat Completions (older local servers)
   npm run test:evals -- --concurrency 2           # Limit concurrency to avoid rate limits
   npm run test:evals -- --concurrency 1 --pause 2000  # Serial with 2s gap between LLM calls
 
 Environment variables:
-  OPENAI_BASE_URL       Override LLM endpoint (default: https://api.openai.com/v1).
-                        OpenAI hosts use the Responses API; other hosts use Chat Completions.
+  OPENAI_BASE_URL       Override LLM endpoint (default: https://api.openai.com/v1)
   OPENAI_API_KEY        API key for the LLM provider (required)
-  EVAL_REASONING_EFFORT Responses API reasoning effort (default: medium)
+  EVAL_API              responses (default) or chat.completions (overridden by --api)
+  EVAL_REASONING_EFFORT OpenAI Responses reasoning effort (default: medium)
   EVAL_CONCURRENCY      Default concurrency limit (overridden by --concurrency)
   EVAL_PAUSE_MS         Default pause between LLM calls in ms (overridden by --pause)
 
@@ -56,8 +60,9 @@ Environment variables:
 }
 
 const model = values.model || DEFAULT_MODEL;
-const evalApi = resolveEvalApi();
-const reasoningEffort = evalApi === "responses" ? resolveReasoningEffort() : undefined;
+const evalApi = resolveEvalApi(values.api);
+const reasoningEffort =
+  evalApi === "responses" && isOpenAIApiHost() ? resolveReasoningEffort() : undefined;
 const concurrency = parseInt(values.concurrency || process.env.EVAL_CONCURRENCY || "5", 10);
 const pauseMs = parseInt(values.pause || process.env.EVAL_PAUSE_MS || "0", 10);
 const scenarioFilter = values.scenario;
@@ -85,7 +90,7 @@ console.error(`Concurrency: ${concurrency}`);
 if (pauseMs > 0) console.error(`Pause: ${pauseMs}ms between LLM calls`);
 console.error(`Scenarios: ${totalScenarios}\n`);
 
-const baseProvider = createProvider(model);
+const baseProvider = createProvider(model, { api: evalApi });
 const provider = pauseMs > 0 ? withThrottle(baseProvider, pauseMs) : baseProvider;
 const result = await runAllScenarios(groups, provider, model, concurrency);
 

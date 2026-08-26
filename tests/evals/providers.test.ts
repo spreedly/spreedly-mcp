@@ -1,20 +1,51 @@
 import { describe, it, expect } from "vitest";
 import {
+  isOpenAIApiHost,
   messagesToResponseInput,
   outputItemsToAssistantMessage,
   resolveEvalApi,
   resolveReasoningEffort,
+  responsesCreateExtras,
 } from "../../evals/lib/providers.js";
 import type { LLMMessage } from "../../evals/lib/types.js";
 import type { ResponseOutputItem } from "openai/resources/responses/responses.js";
 
 describe("resolveEvalApi", () => {
-  it("uses Responses on api.openai.com", () => {
-    expect(resolveEvalApi("https://api.openai.com/v1")).toBe("responses");
+  it("defaults to responses", () => {
+    expect(resolveEvalApi(undefined)).toBe("responses");
+    expect(resolveEvalApi("")).toBe("responses");
   });
 
-  it("uses Chat Completions on other hosts", () => {
-    expect(resolveEvalApi("http://localhost:11434/v1")).toBe("chat.completions");
+  it("accepts chat.completions", () => {
+    expect(resolveEvalApi("chat.completions")).toBe("chat.completions");
+  });
+
+  it("rejects unknown values", () => {
+    expect(() => resolveEvalApi("chat")).toThrow(/Invalid EVAL_API/);
+  });
+});
+
+describe("isOpenAIApiHost", () => {
+  it("detects api.openai.com", () => {
+    expect(isOpenAIApiHost("https://api.openai.com/v1")).toBe(true);
+  });
+
+  it("does not treat local hosts as OpenAI", () => {
+    expect(isOpenAIApiHost("http://localhost:11434/v1")).toBe(false);
+  });
+});
+
+describe("responsesCreateExtras", () => {
+  it("sends store:false only on non-OpenAI hosts", () => {
+    expect(responsesCreateExtras(false, "medium")).toEqual({ store: false });
+  });
+
+  it("includes encrypted reasoning and effort on OpenAI", () => {
+    expect(responsesCreateExtras(true, "low")).toEqual({
+      store: false,
+      include: ["reasoning.encrypted_content"],
+      reasoning: { effort: "low" },
+    });
   });
 });
 
