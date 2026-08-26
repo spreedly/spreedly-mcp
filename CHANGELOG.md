@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.2] - 2026-08-26
 
+### Fixed
+
+- MCP `initialize` handshake now reports the same version as `package.json` (it was stuck at `0.1.0`)
+
 ### Security
 
 - Cleared 37 Dependabot alerts by moving transitive lockfile versions onto patched releases (including `hono`, `fast-uri`, `vite`, and `esbuild`). Added an `overrides` entry so `tsup` can use patched `esbuild`. `npm audit` reports 0 vulnerabilities.
