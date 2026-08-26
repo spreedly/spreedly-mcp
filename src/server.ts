@@ -1,13 +1,13 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
 import type { SpreedlyTransport } from "./transport/types.js";
 import { allTools } from "./domains/index.js";
 import { wrapHandler } from "./security/middleware.js";
 import { filterTools, getToolDescription, type ToolPolicyConfig } from "./security/toolPolicy.js";
 import { SERVER_INSTRUCTIONS } from "./instructions.js";
-import { z } from "zod";
+import { version as SERVER_VERSION } from "../package.json";
 
 const SERVER_NAME = "spreedly-mcp";
-const SERVER_VERSION = "0.1.0";
 
 export function createServer(
   transport: SpreedlyTransport,
