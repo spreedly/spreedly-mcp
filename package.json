@@ -1,6 +1,6 @@
 {
   "name": "@spreedly/spreedly-mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Spreedly MCP server -- interact with the Spreedly payments API through the Model Context Protocol",
   "type": "module",
   "bin": {
@@ -71,5 +71,8 @@
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.58.2",
     "vitest": "^4.1.4"
+  },
+  "overrides": {
+    "esbuild": "^0.28.1"
   }
 }

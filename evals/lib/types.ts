@@ -1,3 +1,4 @@
+import type { ResponseOutputItem } from "openai/resources/responses/responses.js";
 import type { ToolPolicyConfig } from "../../src/security/toolPolicy.js";
 import type { MockResponseValue } from "../../tests/helpers/transport.js";
 
@@ -52,6 +53,8 @@ export interface LLMMessage {
   content: string;
   tool_calls?: LLMToolCall[];
   tool_call_id?: string;
+  /** Prior Responses output items for this assistant turn. Replayed on later turns; not logged. */
+  responsesItems?: ResponseOutputItem[];
 }
 
 export interface LLMToolCall {

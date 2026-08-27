@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { createMcpHarness, type McpHarness } from "../helpers/mcp-harness.js";
-import { SERVER_INSTRUCTIONS } from "../../src/server.js";
+import { SERVER_INSTRUCTIONS, SERVER_NAME } from "../../src/server.js";
+import { version } from "../../package.json";
 import { fakeTransaction, fakeGatewayList } from "../helpers/fixtures.js";
 import type { ToolPolicyConfig } from "../../src/security/toolPolicy.js";
 import type { MockResponseValue } from "../helpers/transport.js";
@@ -100,6 +101,14 @@ afterEach(async () => {
 });
 
 describe("MCP server instructions", () => {
+  it("advertises package.json version in the initialize handshake", async () => {
+    harness = await createMcpHarness(ALL_DISABLED);
+    expect(harness.client.getServerVersion()).toEqual({
+      name: SERVER_NAME,
+      version,
+    });
+  });
+
   it("delivers SERVER_INSTRUCTIONS to the client", async () => {
     harness = await createMcpHarness(ALL_DISABLED);
     const instructions = harness.client.getInstructions();
