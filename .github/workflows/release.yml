@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - "v*"
+  # Manual dry run: proves the npm trusted-publisher OIDC exchange works
+  # end to end without publishing anything.
+  workflow_dispatch:
 
 concurrency:
   group: release-${{ github.ref }}
@@ -12,6 +15,9 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # Required reviewers + v*/main deployment rules live on this environment.
+    # The npm trusted publisher must carry the same environment name.
+    environment: release
     permissions:
       contents: write
       id-token: write
@@ -19,13 +25,26 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Full history so the ancestry check below can see main.
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Validate tag
+        if: github.event_name == 'push'
         run: |
           # Tag must be valid semver: v<MAJOR>.<MINOR>.<PATCH>[-prerelease][+build]
           if ! [[ "${GITHUB_REF_NAME}" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
             echo "::error::Tag ${GITHUB_REF_NAME} is not valid semver (expected vMAJOR.MINOR.PATCH[-prerelease][+build])"
             exit 1
+          fi
+
+          # The semver prerelease group, not a substring match: build
+          # metadata (+build) may contain hyphens on a stable version.
+          if [[ -n "${BASH_REMATCH[4]}" ]]; then
+            echo "IS_PRERELEASE=true" >> "$GITHUB_ENV"
+          else
+            echo "IS_PRERELEASE=false" >> "$GITHUB_ENV"
           fi
 
           # Tag must match package.json version exactly
@@ -39,17 +58,29 @@ jobs:
           echo "VERSION=${PKG_VERSION}" >> "$GITHUB_ENV"
           echo "Validated tag ${GITHUB_REF_NAME} matches package.json ${PKG_VERSION}"
 
+      - name: Verify tagged commit is on main
+        if: github.event_name == 'push'
+        run: |
+          if ! git merge-base --is-ancestor "${GITHUB_SHA}" origin/main; then
+            echo "::error::Tagged commit ${GITHUB_SHA} is not on main. Releases are cut from reviewed commits on main only."
+            exit 1
+          fi
+          echo "Tagged commit is on main."
+
       - name: Use Node.js 22
         uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
-          # Do not set registry-url. It writes `_authToken=${NODE_AUTH_TOKEN}`
-          # into the runner .npmrc, which makes npm skip OIDC trusted publishing
-          # and fail the PUT with a misleading 404.
+          # No registry-url here. It writes `_authToken=${NODE_AUTH_TOKEN}`
+          # into the runner .npmrc, and npm treats the unexpanded literal as
+          # a real token, so a failed OIDC exchange dies as a misleading 404
+          # on the PUT. Without it, the same failure is a clear ENEEDAUTH.
 
       - name: Ensure npm supports trusted publishing
-        run: npm install -g npm@11.5.1
+        # Node 22 ships npm 10, which cannot do OIDC. Track the 11.x line;
+        # an exact patch pin here is invisible to Dependabot and goes stale.
+        run: npm install -g npm@11
 
       - name: Install dependencies
         run: npm ci
@@ -75,22 +106,33 @@ jobs:
           TARBALL=$(npm pack)
           echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
 
+      - name: Download gitleaks
+        # Own step, no continue-on-error: a failed download must not read as
+        # "secrets detected". Checksum pinned so a moved tag or tampered
+        # release asset fails here instead of executing.
+        env:
+          GITLEAKS_VERSION: "8.30.0"
+          GITLEAKS_SHA256: "79a3ab579b53f71efd634f3aaf7e04a0fa0cf206b7ed434638d1547a2470a66e"
+        run: |
+          wget -q "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | sha256sum -c -
+          tar -xzf "gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          chmod +x gitleaks
+
       - name: Scan package tarball for secrets
         id: gitleaks
         continue-on-error: true
         env:
-          GITLEAKS_VERSION: "8.30.0"
+          TARBALL: ${{ steps.pack.outputs.tarball }}
         run: |
-          wget -q "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
-          tar -xzf "gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
-          chmod +x gitleaks
-
           # Extract tarball — scan exactly what customers receive
           mkdir -p /tmp/pkg-scan
-          tar xzf "${{ steps.pack.outputs.tarball }}" -C /tmp/pkg-scan
+          tar xzf "${TARBALL}" -C /tmp/pkg-scan
 
-          # Scan in filesystem mode (--no-git): covers dist/ which GHAS never sees
-          ./gitleaks detect --source /tmp/pkg-scan --no-git --verbose --report-format sarif --report-path gitleaks-results.sarif
+          # Scan in filesystem mode (--no-git): covers dist/ which GHAS never sees.
+          # --redact: this log is public; a detected secret must not be printed
+          # into it while we block the release for containing it.
+          ./gitleaks detect --source /tmp/pkg-scan --no-git --verbose --redact --report-format sarif --report-path gitleaks-results.sarif
 
       - name: Upload gitleaks SARIF report
         if: always() && hashFiles('gitleaks-results.sarif') != ''
@@ -111,21 +153,36 @@ jobs:
           jq -e '.bomFormat == "CycloneDX" and .specVersion and (.components | length > 0)' sbom.cdx.json > /dev/null
 
       - name: Generate SHA-256 checksums
-        run: sha256sum "${{ steps.pack.outputs.tarball }}" sbom.cdx.json > SHA256SUMS.txt
+        env:
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+        run: sha256sum "${TARBALL}" sbom.cdx.json > SHA256SUMS.txt
 
       - name: Create draft GitHub Release
+        if: github.event_name == 'push'
         run: |
-          gh release create "${{ github.ref_name }}" \
-            --title "${{ github.ref_name }}" \
+          # Idempotent: a re-run of this job must not create a duplicate draft.
+          if gh release view "${GITHUB_REF_NAME}" > /dev/null 2>&1; then
+            echo "Release ${GITHUB_REF_NAME} already exists, skipping creation."
+            exit 0
+          fi
+          EXTRA_ARGS=()
+          if [[ "${IS_PRERELEASE}" == "true" ]]; then
+            EXTRA_ARGS+=(--prerelease)
+          fi
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
             --generate-notes \
             --draft \
-            "${{ steps.pack.outputs.tarball }}" \
+            "${EXTRA_ARGS[@]}" \
+            "${TARBALL}" \
             SHA256SUMS.txt \
             sbom.cdx.json
         env:
           GH_TOKEN: ${{ github.token }}
+          TARBALL: ${{ steps.pack.outputs.tarball }}
 
       - name: Verify version is unpublished
+        if: github.event_name == 'push'
         run: |
           # Refuse to publish if this version already exists on the npm registry.
           # `npm view` exits 0 and prints the version if it exists, exits non-zero
@@ -137,4 +194,36 @@ jobs:
           echo "Version ${VERSION} is not yet published, proceeding."
 
       - name: Publish to npm
-        run: npm publish "${{ steps.pack.outputs.tarball }}" --provenance --access public
+        if: github.event_name == 'push'
+        env:
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+        run: |
+          # Explicit --provenance: npm's auto-enable on the OIDC path is
+          # best-effort (swallowed on a failed visibility lookup); the flag
+          # makes a provenance-less publish a hard failure instead.
+          EXTRA_ARGS=()
+          if [[ "${IS_PRERELEASE}" == "true" ]]; then
+            # Prereleases must not take the `latest` dist-tag. npm >= 11
+            # refuses a prerelease publish without an explicit --tag.
+            EXTRA_ARGS+=(--tag next)
+          fi
+          npm publish "${TARBALL}" --provenance --access public "${EXTRA_ARGS[@]}"
+
+      - name: Dry-run publish to verify OIDC trusted publishing
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+        run: |
+          # npm runs the OIDC token exchange before the dry-run gate, so this
+          # proves the trusted-publisher config end to end with no registry
+          # write. The publish command itself is allowed to fail after the
+          # exchange (e.g. the current version is already published); only
+          # the grep is load-bearing, because the exchange fails silently
+          # with exit 0. --tag next keeps a prerelease version in
+          # package.json from aborting before the exchange runs.
+          npm publish "${TARBALL}" --dry-run --tag next --access public --loglevel verbose 2>&1 | tee publish-dry-run.log || true
+          if ! grep -q "Successfully retrieved and set token" publish-dry-run.log; then
+            echo "::error::OIDC token exchange did not succeed. Search the log above for 'oidc' lines."
+            exit 1
+          fi
+          echo "OIDC trusted publishing exchange succeeded."
