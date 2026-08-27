@@ -12,7 +12,7 @@ const DEFAULT_BASE_URL = "https://api.openai.com/v1";
 export const DEFAULT_MODEL = "gpt-5.6-luna";
 export const DEFAULT_REASONING_EFFORT: ReasoningEffort = "medium";
 
-const REASONING_EFFORTS: readonly ReasoningEffort[] = [
+const REASONING_EFFORTS: readonly NonNullable<ReasoningEffort>[] = [
   "none",
   "minimal",
   "low",
@@ -57,7 +57,7 @@ export function resolveReasoningEffort(
   );
 }
 
-function isReasoningEffort(value: string): value is ReasoningEffort {
+function isReasoningEffort(value: string): value is NonNullable<ReasoningEffort> {
   for (const effort of REASONING_EFFORTS) {
     if (effort === value) {
       return true;
@@ -105,6 +105,40 @@ export function responsesCreateExtras(
   };
 }
 
+type ResponsesOutputEnvelope = {
+  output?: ResponseOutputItem[] | null;
+  status?: string | null;
+  incomplete_details?: { reason?: string | null } | null;
+  error?: { code?: string | null; message?: string | null } | null;
+};
+
+/**
+ * The Responses API can return zero output items -- an incomplete response
+ * (`max_output_tokens`, content filter), or an OSS `/v1/responses` server that
+ * returns nothing usable. Chat Completions throws on a missing choice; without
+ * the same guard here an empty reply is indistinguishable from "the model chose
+ * not to call anything", which silently passes every `toolNotCalled` and
+ * `pausedForInput` grader. Fail loud instead.
+ */
+export function assertResponseOutput(response: ResponsesOutputEnvelope): ResponseOutputItem[] {
+  const output = response.output;
+  if (output && output.length > 0) {
+    return output;
+  }
+  const details = [`status=${response.status ?? "unknown"}`];
+  if (response.incomplete_details?.reason) {
+    details.push(`incomplete_details.reason=${response.incomplete_details.reason}`);
+  }
+  if (response.error?.message) {
+    details.push(`error=${response.error.message}`);
+  } else if (response.error?.code) {
+    details.push(`error.code=${response.error.code}`);
+  }
+  throw new Error(
+    `No response from LLM -- Responses API returned no output items (${details.join(", ")})`,
+  );
+}
+
 function responsesProvider(
   client: OpenAI,
   modelName: string,
@@ -118,7 +152,7 @@ function responsesProvider(
         tools: tools.length > 0 ? tools.map(toResponseTool) : undefined,
         ...responsesCreateExtras(options.openaiHost, options.effort),
       });
-      return outputItemsToAssistantMessage(response.output);
+      return outputItemsToAssistantMessage(assertResponseOutput(response));
     },
   };
 }
@@ -206,6 +240,8 @@ export function outputItemsToAssistantMessage(output: ResponseOutputItem[]): LLM
       for (const part of item.content) {
         if (part.type === "output_text") {
           texts.push(part.text);
+        } else if (part.type === "refusal") {
+          texts.push(part.refusal);
         }
       }
       continue;
