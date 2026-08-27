@@ -44,7 +44,12 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          registry-url: "https://registry.npmjs.org"
+          # Do not set registry-url. It writes `_authToken=${NODE_AUTH_TOKEN}`
+          # into the runner .npmrc, which makes npm skip OIDC trusted publishing
+          # and fail the PUT with a misleading 404.
+
+      - name: Ensure npm supports trusted publishing
+        run: npm install -g npm@11.5.1
 
       - name: Install dependencies
         run: npm ci
@@ -133,5 +138,3 @@ jobs:
 
       - name: Publish to npm
         run: npm publish "${{ steps.pack.outputs.tarball }}" --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

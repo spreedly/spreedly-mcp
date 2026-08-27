@@ -9,6 +9,19 @@ How releases of `@spreedly/spreedly-mcp` are cut, versioned, and corrected.
   CI rejects a tag push if these disagree.
 - Pre-releases use semver identifiers (e.g. `v1.5.0-rc.1`).
 
+## Publishing
+
+CI publishes to npm with [trusted publishing](https://docs.npmjs.com/trusted-publishers).
+The `Release` workflow (`release.yml`) authenticates via GitHub OIDC. There is
+no npm write token in the repo.
+
+The trusted publisher on npmjs.com is pinned to org `spreedly`, repo
+`spreedly-mcp`, workflow filename `release.yml`, and no GitHub Environment.
+Renaming that workflow file will fail publish until the npm config is updated.
+
+Provenance attestations are generated on that path. The publish step still
+passes `--provenance`.
+
 ## Immutability
 
 - Tags matching `v*` are protected against deletion and non-fast-forward
