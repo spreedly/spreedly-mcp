@@ -40,7 +40,7 @@ jobs:
           echo "Validated tag ${GITHUB_REF_NAME} matches package.json ${PKG_VERSION}"
 
       - name: Use Node.js 22
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm

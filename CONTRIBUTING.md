@@ -170,7 +170,7 @@ cp .env.example .env
 ### Running
 
 ```bash
-# Run all scenarios (defaults to gpt-5-nano)
+# Run all scenarios (defaults to gpt-5.6-luna)
 npm run test:evals
 
 # Run a specific scenario group
