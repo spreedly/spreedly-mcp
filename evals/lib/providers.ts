@@ -105,12 +105,13 @@ export function responsesCreateExtras(
   };
 }
 
-type ResponsesOutputEnvelope = {
-  output?: ResponseOutputItem[] | null;
-  status?: string | null;
-  incomplete_details?: { reason?: string | null } | null;
-  error?: { code?: string | null; message?: string | null } | null;
-};
+/**
+ * The fields of the canonical `Response` the guard below reads. `Partial` because
+ * a non-OpenAI `/v1/responses` server may omit any of them.
+ */
+type ResponsesOutputEnvelope = Partial<
+  Pick<OpenAI.Responses.Response, "output" | "status" | "incomplete_details" | "error">
+>;
 
 /**
  * The Responses API can return zero output items -- an incomplete response
