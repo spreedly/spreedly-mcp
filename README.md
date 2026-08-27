@@ -2,6 +2,8 @@
 
 A [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server that provides AI assistants with direct access to the [Spreedly](https://www.spreedly.com/) payments API. Enables LLMs to manage gateways, process transactions, tokenize payment methods, and more -- all through structured, validated tool calls.
 
+Published on npm as [`@spreedly/spreedly-mcp`](https://www.npmjs.com/package/@spreedly/spreedly-mcp).
+
 ## Quick Start
 
 Add this to your MCP client configuration:
