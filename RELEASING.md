@@ -19,10 +19,9 @@ the workflow runs from the tagged commit, so its checks guard against
 mistakes, not against a malicious tagger; the release environment's
 required review is the control.
 
-The publish job runs in the `release` GitHub Environment: required
-reviewers approve each release, the tagger cannot approve their own,
-and deployments are restricted to `v*` tags (plus `main` for the manual
-dry run).
+The publish job runs in the `release` GitHub Environment: a required
+reviewer approves each release, and deployments are restricted to `v*`
+tags (plus `main` for the manual dry run).
 
 The trusted publisher on npmjs.com is pinned to org `spreedly`, repo
 `spreedly-mcp`, workflow filename `release.yml`, and environment
