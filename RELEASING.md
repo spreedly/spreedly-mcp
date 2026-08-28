@@ -29,11 +29,10 @@ The trusted publisher on npmjs.com is pinned to org `spreedly`, repo
 matching the npm-side setting fails publish until the two configs
 agree again.
 
-OIDC is not yet the only publish path. Until the npm-side teardown
-completes (revoke the legacy automation token, enable the package
-setting that disallows token publishes, and reduce npm package owners
-to the service account), token-based and interactive publishes remain
-possible.
+Token-based publishing is disallowed at the package level and no npm
+token exists in the repo. npm package owners retain interactive 2FA
+publish from a workstation; that is the accepted emergency path, not a
+CI path.
 
 The publish step passes `--provenance` explicitly. npm auto-enables
 provenance on the trusted-publishing path, but that auto-enable is
