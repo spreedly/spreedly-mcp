@@ -29,10 +29,8 @@ The trusted publisher on npmjs.com is pinned to org `spreedly`, repo
 matching the npm-side setting fails publish until the two configs
 agree again.
 
-Token-based publishing is disallowed at the package level and no npm
-token exists in the repo. npm package owners retain interactive 2FA
-publish from a workstation; that is the accepted emergency path, not a
-CI path.
+Token publishing is disallowed at the package level; npm owners can
+still publish interactively with 2FA.
 
 The publish step passes `--provenance` explicitly. npm auto-enables
 provenance on the trusted-publishing path, but that auto-enable is
