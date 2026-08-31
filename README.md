@@ -1,5 +1,10 @@
 # Spreedly MCP Server
 
+[![npm version](https://img.shields.io/npm/v/%40spreedly%2Fspreedly-mcp)](https://www.npmjs.com/package/@spreedly/spreedly-mcp)
+[![CI](https://github.com/spreedly/spreedly-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/spreedly/spreedly-mcp/actions/workflows/ci.yml)
+[![node](https://img.shields.io/node/v/%40spreedly%2Fspreedly-mcp)](https://www.npmjs.com/package/@spreedly/spreedly-mcp)
+[![license](https://img.shields.io/npm/l/%40spreedly%2Fspreedly-mcp)](LICENSE)
+
 A [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server that provides AI assistants with direct access to the [Spreedly](https://www.spreedly.com/) payments API. Enables LLMs to manage gateways, process transactions, tokenize payment methods, and more -- all through structured, validated tool calls.
 
 Published on npm as [`@spreedly/spreedly-mcp`](https://www.npmjs.com/package/@spreedly/spreedly-mcp).
